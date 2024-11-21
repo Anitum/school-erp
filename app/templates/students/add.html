@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Add Student - School Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Add New Student</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Personal Information -->
+                        <h4 class="mb-3">Personal Information</h4>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="middle_name" class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" id="middle_name" name="middle_name">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="blood_group" class="form-label">Blood Group</label>
+                                <select class="form-select" id="blood_group" name="blood_group">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
+                                <input type="text" class="form-control" id="aadhaar_number" name="aadhaar_number" 
+                                       pattern="[0-9]{12}" title="Please enter 12 digits Aadhaar number">
+                            </div>
+                        </div>
+
+                        <!-- Academic Information -->
+                        <h4 class="mb-3">Academic Information</h4>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="class_id" class="form-label">Class</label>
+                                <select class="form-select" id="class_id" name="class_id" required>
+                                    <option value="">Select Class</option>
+                                    {% for class in classes %}
+                                    <option value="{{ class.id }}">{{ class.name }} - {{ class.section }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="branch_id" class="form-label">Branch</label>
+                                <select class="form-select" id="branch_id" name="branch_id" required>
+                                    <option value="">Select Branch</option>
+                                    {% for branch in branches %}
+                                    <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="transport_route_id" class="form-label">Transport Route</label>
+                                <select class="form-select" id="transport_route_id" name="transport_route_id">
+                                    <option value="">No Transport Required</option>
+                                    {% for route in transport_routes %}
+                                    <option value="{{ route.id }}">{{ route.route_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Document Upload -->
+                        <h4 class="mb-3">Documents</h4>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="document_type" class="form-label">Document Type</label>
+                                <select class="form-select" id="document_type" name="document_type">
+                                    <option value="AADHAAR">Aadhaar Card</option>
+                                    <option value="BIRTH_CERTIFICATE">Birth Certificate</option>
+                                    <option value="TRANSFER_CERTIFICATE">Transfer Certificate</option>
+                                    <option value="PREVIOUS_MARKSHEET">Previous Marksheet</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="documents" class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="documents" name="documents" multiple>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="document_description" class="form-label">Document Description</label>
+                                <input type="text" class="form-control" id="document_description" name="document_description">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('student.list_students') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Add Student</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add client-side validation if needed
+    document.getElementById('aadhaar_number').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+    });
+</script>
+{% endblock %}

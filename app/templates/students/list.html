@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Students - School Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Students</h1>
+        <a href="{{ url_for('student.add_student') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Student
+        </a>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="class_id" class="form-label">Class</label>
+                    <select class="form-select" id="class_id" name="class_id">
+                        <option value="">All Classes</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if selected_class == class.id %}selected{% endif %}>
+                            {{ class.name }} - {{ class.section }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="branch_id" class="form-label">Branch</label>
+                    <select class="form-select" id="branch_id" name="branch_id">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch == branch.id %}selected{% endif %}>
+                            {{ branch.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Name or Aadhaar" value="{{ search }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Branch</th>
+                            <th>Contact</th>
+                            <th>Transport</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.id }}</td>
+                            <td>
+                                <div>{{ student.full_name }}</div>
+                                <small class="text-muted">DOB: {{ student.date_of_birth.strftime('%Y-%m-%d') }}</small>
+                            </td>
+                            <td>{{ student.class_group.name }}-{{ student.class_group.section }}</td>
+                            <td>{{ student.branch.name }}</td>
+                            <td>
+                                {% if student.parents %}
+                                    {% for parent in student.parents %}
+                                    <div>
+                                        <small>{{ parent.relationship }}: {{ parent.phone_primary }}</small>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No contacts</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.transport_route %}
+                                    {{ student.transport_route.route_name }}
+                                {% else %}
+                                    <span class="text-muted">No transport</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if student.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('student.view_student', student_id=student.id) }}" 
+                                       class="btn btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('student.edit_student', student_id=student.id) }}" 
+                                       class="btn btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('student.student_documents', student_id=student.id) }}" 
+                                       class="btn btn-secondary" title="Documents">
+                                        <i class="fas fa-file"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">No students found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form when filters change
+    document.querySelectorAll('select[name="class_id"], select[name="branch_id"], select[name="status"]')
+        .forEach(select => {
+            select.addEventListener('change', () => {
+                select.closest('form').submit();
+            });
+        });
+</script>
+{% endblock %}

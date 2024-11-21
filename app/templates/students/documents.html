@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Student Documents - {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Student Documents</h1>
+            <p class="text-muted">{{ student.full_name }} - {{ student.class_group.name }}-{{ student.class_group.section }}</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-upload"></i> Upload Documents
+            </button>
+            <a href="{{ url_for('student.view_student', student_id=student.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Details
+            </a>
+        </div>
+    </div>
+
+    <!-- Document Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-group w-100" role="group" id="documentFilters">
+                        <input type="radio" class="btn-check" name="docType" id="all" value="all" checked>
+                        <label class="btn btn-outline-primary" for="all">All Documents</label>
+                        
+                        <input type="radio" class="btn-check" name="docType" id="mandatory" value="mandatory">
+                        <label class="btn btn-outline-primary" for="mandatory">Mandatory</label>
+                        
+                        <input type="radio" class="btn-check" name="docType" id="academic" value="academic">
+                        <label class="btn btn-outline-primary" for="academic">Academic</label>
+                        
+                        <input type="radio" class="btn-check" name="docType" id="identity" value="identity">
+                        <label class="btn btn-outline-primary" for="identity">Identity</label>
+                        
+                        <input type="radio" class="btn-check" name="docType" id="other" value="other">
+                        <label class="btn btn-outline-primary" for="other">Other</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Grid -->
+    <div class="row" id="documentsContainer">
+        {% for doc in student.documents %}
+        <div class="col-md-4 mb-4 document-item" data-type="{{ doc.document_type.lower() }}">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ doc.document_type.replace('_', ' ').title() }}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="viewDocument('{{ doc.file_path }}')">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="downloadDocument('{{ doc.file_path }}')">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('student.delete_document', 
+                                          student_id=student.id, document_id=doc.id) }}" class="d-inline">
+                                        <button type="submit" class="dropdown-item text-danger"
+                                                onclick="return confirm('Are you sure you want to delete this document?')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="document-preview mb-3">
+                        {% if doc.file_type.lower() in ['.jpg', '.jpeg', '.png', '.gif'] %}
+                            <img src="{{ url_for('static', filename=doc.file_path) }}" 
+                                 class="img-fluid rounded" alt="Document Preview">
+                        {% else %}
+                            <div class="document-icon">
+                                <i class="fas fa-file-alt fa-3x text-secondary"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <p class="mb-2">{{ doc.description or 'No description provided' }}</p>
+                    <small class="text-muted">
+                        Uploaded: {{ doc.created_at.strftime('%d-%m-%Y %H:%M') }}
+                    </small>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-info">{{ doc.file_type }}</span>
+                        <small class="text-muted">
+                            {% set file_size = get_file_size(doc.file_path) %}
+                            {{ file_size }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No documents uploaded yet. Click the "Upload Documents" button to add documents.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Documents</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label class="form-label">Document Category</label>
+                        <select class="form-select" name="document_type" required>
+                            <optgroup label="Mandatory Documents">
+                                <option value="BIRTH_CERTIFICATE">Birth Certificate</option>
+                                <option value="AADHAAR">Aadhaar Card</option>
+                                <option value="TRANSFER_CERTIFICATE">Transfer Certificate</option>
+                            </optgroup>
+                            <optgroup label="Academic Documents">
+                                <option value="PREVIOUS_MARKSHEET">Previous Marksheet</option>
+                                <option value="ACHIEVEMENT_CERTIFICATE">Achievement Certificate</option>
+                                <option value="PROGRESS_REPORT">Progress Report</option>
+                            </optgroup>
+                            <optgroup label="Identity Documents">
+                                <option value="PHOTO">Photograph</option>
+                                <option value="ID_PROOF">ID Proof</option>
+                            </optgroup>
+                            <optgroup label="Other Documents">
+                                <option value="MEDICAL_RECORD">Medical Record</option>
+                                <option value="OTHER">Other Document</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" name="document_description" 
+                               placeholder="Enter document description">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Select Files</label>
+                        <input type="file" class="form-control" name="documents" multiple required>
+                        <small class="text-muted">
+                            Supported formats: PDF, JPG, PNG, JPEG. Maximum file size: 5MB
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="uploadForm" class="btn btn-primary">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Document filtering
+document.getElementById('documentFilters').addEventListener('change', function(e) {
+    if (!e.target.matches('input[type="radio"]')) return;
+    
+    const selectedType = e.target.value;
+    const documents = document.querySelectorAll('.document-item');
+    
+    documents.forEach(doc => {
+        if (selectedType === 'all' || doc.dataset.type.includes(selectedType)) {
+            doc.style.display = '';
+        } else {
+            doc.style.display = 'none';
+        }
+    });
+});
+
+// Document preview
+function viewDocument(path) {
+    // Implement document preview logic
+    window.open(`/static/${path}`, '_blank');
+}
+
+// Document download
+function downloadDocument(path) {
+    // Implement document download logic
+    const link = document.createElement('a');
+    link.href = `/static/${path}`;
+    link.download = path.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// File upload validation
+document.querySelector('input[name="documents"]').addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    
+    const invalidFiles = files.filter(file => {
+        return file.size > maxSize || !allowedTypes.includes(file.type);
+    });
+    
+    if (invalidFiles.length > 0) {
+        alert('Some files are not valid. Please check the file size and format.');
+        e.target.value = '';
+    }
+});
+</script>
+{% endblock %}

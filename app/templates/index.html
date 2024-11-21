@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - School Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Students</h5>
+                <p class="card-text display-4">{{ stats.total_students }}</p>
+                <a href="{{ url_for('main.list_students') }}" class="btn btn-light">View Students</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Staff</h5>
+                <p class="card-text display-4">{{ stats.total_staff }}</p>
+                <a href="{{ url_for('main.list_staff') }}" class="btn btn-light">View Staff</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Classes</h5>
+                <p class="card-text display-4">{{ stats.total_classes }}</p>
+                <a href="{{ url_for('main.list_classes') }}" class="btn btn-light">View Classes</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Branches</h5>
+                <p class="card-text display-4">{{ stats.total_branches }}</p>
+                <a href="{{ url_for('main.list_branches') }}" class="btn btn-light">View Branches</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h2>Quick Actions</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('main.add_student') }}" class="btn btn-primary">Add Student</a>
+            <a href="{{ url_for('main.add_staff') }}" class="btn btn-success">Add Staff</a>
+            <a href="{{ url_for('main.add_class') }}" class="btn btn-info">Add Class</a>
+            <a href="{{ url_for('main.add_branch') }}" class="btn btn-warning">Add Branch</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
