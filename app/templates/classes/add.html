@@ -1,63 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}Add Class - School Management{% endblock %}
+{% block title %}Add New Class - School ERP{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h2>Add New Class</h2>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="name" class="form-label">Class Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="section" class="form-label">Section</label>
-                            <input type="text" class="form-control" id="section" name="section" required>
-                        </div>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">Add New Class</h2>
+                        <a href="{{ url_for('class.list_classes') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
                     </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="addClassForm">
+                        <!-- Basic Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Basic Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="name" class="form-label">Class Name/Grade *</label>
+                                        <input type="text" class="form-control" id="name" name="name" required
+                                               placeholder="e.g., 1, 2, 3 or First, Second">
+                                        <small class="text-muted">Enter the class grade or name</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="section" class="form-label">Section *</label>
+                                        <input type="text" class="form-control" id="section" name="section" required
+                                               placeholder="e.g., A, B, C">
+                                        <small class="text-muted">Enter the section identifier</small>
+                                    </div>
+                                </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="academic_year" class="form-label">Academic Year</label>
-                            <select class="form-select" id="academic_year" name="academic_year" required>
-                                <option value="">Select Year</option>
-                                {% for year in range(2024, 2019, -1) %}
-                                <option value="{{ year }}">{{ year }}-{{ year + 1 }}</option>
-                                {% endfor %}
-                            </select>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="academic_year" class="form-label">Academic Year *</label>
+                                        <select class="form-select" id="academic_year" name="academic_year" required>
+                                            {% for year in range(current_year + 1, current_year - 2, -1) %}
+                                            <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                                {{ year }}-{{ year + 1 }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="capacity" class="form-label">Class Capacity *</label>
+                                        <input type="number" class="form-control" id="capacity" name="capacity"
+                                               value="30" min="1" max="100" required>
+                                        <small class="text-muted">Maximum number of students</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="primary_teacher_id" class="form-label">Class Teacher</label>
+                                        <select class="form-select" id="primary_teacher_id" name="primary_teacher_id">
+                                            <option value="">Select Class Teacher</option>
+                                            {% for teacher in teachers %}
+                                            <option value="{{ teacher.id }}">
+                                                {{ teacher.full_name }}
+                                                {% if teacher.primary_class %}
+                                                (Already assigned to {{ teacher.primary_class.name }}-{{ teacher.primary_class.section }})
+                                                {% endif %}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <small class="text-muted">Optional: Can be assigned later</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="capacity" class="form-label">Capacity</label>
-                            <input type="number" class="form-control" id="capacity" name="capacity" 
-                                   value="30" min="1" max="100" required>
+
+                        <!-- Schedule Information -->
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">Schedule Information</h4>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enableSchedule" name="enable_schedule">
+                                    <label class="form-check-label" for="enableSchedule">Add Schedule Now</label>
+                                </div>
+                            </div>
+                            <div class="card-body" id="scheduleSection" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Schedule can also be configured later from the class details page.
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="start_time" class="form-label">School Start Time</label>
+                                        <input type="time" class="form-control" id="start_time" name="start_time">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="end_time" class="form-label">School End Time</label>
+                                        <input type="time" class="form-control" id="end_time" name="end_time">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="period_duration" class="form-label">Period Duration (minutes)</label>
+                                        <input type="number" class="form-control" id="period_duration" 
+                                               name="period_duration" value="45" min="30" max="120">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="break_duration" class="form-label">Break Duration (minutes)</label>
+                                        <input type="number" class="form-control" id="break_duration" 
+                                               name="break_duration" value="15" min="5" max="60">
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="includeSaturday" 
+                                           name="include_saturday">
+                                    <label class="form-check-label" for="includeSaturday">
+                                        Include Saturdays in schedule
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="primary_teacher_id" class="form-label">Primary Teacher</label>
-                        <select class="form-select" id="primary_teacher_id" name="primary_teacher_id">
-                            <option value="">Select Teacher</option>
-                            {% for teacher in teachers %}
-                            <option value="{{ teacher.id }}">
-                                {{ teacher.first_name }} {{ teacher.last_name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                        <!-- Additional Settings -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Additional Settings</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="autoCreateSubjects" 
+                                                   name="auto_create_subjects" checked>
+                                            <label class="form-check-label" for="autoCreateSubjects">
+                                                Automatically create common subjects for this class
+                                            </label>
+                                            <small class="text-muted d-block">
+                                                This will create basic subjects like Mathematics, Science, etc.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Add Class</button>
-                        <a href="{{ url_for('main.list_classes') }}" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="notifyTeacher" 
+                                                   name="notify_teacher" checked>
+                                            <label class="form-check-label" for="notifyTeacher">
+                                                Notify assigned class teacher
+                                            </label>
+                                            <small class="text-muted d-block">
+                                                Send email notification to the assigned class teacher
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-secondary me-md-2">Reset Form</button>
+                            <button type="submit" class="btn btn-primary">Create Class</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle schedule section
+document.getElementById('enableSchedule').addEventListener('change', function() {
+    const scheduleSection = document.getElementById('scheduleSection');
+    scheduleSection.style.display = this.checked ? 'block' : 'none';
+    
+    // Toggle required attribute for schedule fields
+    const scheduleInputs = scheduleSection.querySelectorAll('input[type="time"], input[type="number"]');
+    scheduleInputs.forEach(input => {
+        input.required = this.checked;
+    });
+});
+
+// Form validation
+document.getElementById('addClassForm').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value;
+    const section = document.getElementById('section').value;
+    const capacity = document.getElementById('capacity').value;
+
+    if (capacity < 1 || capacity > 100) {
+        e.preventDefault();
+        alert('Class capacity must be between 1 and 100');
+        return;
+    }
+
+    if (name.length > 50) {
+        e.preventDefault();
+        alert('Class name must be less than 50 characters');
+        return;
+    }
+
+    if (section.length > 10) {
+        e.preventDefault();
+        alert('Section must be less than 10 characters');
+        return;
+    }
+
+    // Schedule validation if enabled
+    if (document.getElementById('enableSchedule').checked) {
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        
+        if (startTime && endTime && startTime >= endTime) {
+            e.preventDefault();
+            alert('End time must be after start time');
+            return;
+        }
+    }
+});
+
+// Teacher selection warning
+document.getElementById('primary_teacher_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.text.includes('Already assigned')) {
+        if (!confirm('This teacher is already assigned to another class. Do you want to reassign them?')) {
+            this.value = '';
+        }
+    }
+});
+
+// Class name validation
+document.getElementById('name').addEventListener('input', function() {
+    this.value = this.value.replace(/[^a-zA-Z0-9 ]/g, '');
+});
+
+// Section validation
+document.getElementById('section').addEventListener('input', function() {
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+});
+</script>
 {% endblock %}

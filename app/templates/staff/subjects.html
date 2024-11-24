@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Subject Management - {{ staff.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.subject-card {
+    transition: transform 0.2s;
+}
+
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.class-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+.performance-chart {
+    height: 200px;
+    padding: 10px;
+}
+
+.timetable-slot {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 2px;
+    font-size: 0.9rem;
+}
+
+.timetable-header {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+}
+
+.completion-progress {
+    height: 5px;
+    border-radius: 2px;
+    margin-top: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if staff.staff_type != 'TEACHER' %}
+<div class="container">
+    <div class="alert alert-warning">
+        <h4 class="alert-heading">Access Restricted</h4>
+        <p>This section is only available for teaching staff members.</p>
+        <hr>
+        <a href="{{ url_for('staff.view_staff', staff_id=staff.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Profile
+        </a>
+    </div>
+</div>
+{% else %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Subject Management</h1>
+            <p class="text-muted">{{ staff.full_name }} | Teacher</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignSubjectModal">
+                <i class="fas fa-plus"></i> Assign New Subject
+            </button>
+            <a href="{{ url_for('staff.view_staff', staff_id=staff.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-primary mb-2">Total Subjects</h6>
+                    <h2 class="mb-0">{{ staff.subjects_taught|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-success mb-2">Classes</h6>
+                    <h2 class="mb-0">{{ classes_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-info mb-2">Total Students</h6>
+                    <h2 class="mb-0">{{ total_students }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-warning mb-2">Weekly Hours</h6>
+                    <h2 class="mb-0">{{ weekly_hours }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subjects List -->
+    <div class="row">
+        {% for subject in staff.subjects_taught %}
+        <div class="col-md-6 mb-4">
+            <div class="card subject-card">
+                <div class="card-body position-relative">
+                    <span class="class-badge bg-primary bg-opacity-10 text-primary">
+                        {{ subject.class_group.name }}-{{ subject.class_group.section }}
+                    </span>
+                    
+                    <h5 class="card-title mb-3">{{ subject.name }}</h5>
+                    <p class="card-text text-muted">{{ subject.description or 'No description available' }}</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-6">
+                            <small class="text-muted">Students</small>
+                            <h6>{{ subject.class_group.students|length }}</h6>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Credits</small>
+                            <h6>{{ subject.credits }}</h6>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <small class="text-muted">Syllabus Completion</small>
+                        <div class="progress completion-progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ subject.completion_percentage }}%"
+                                 aria-valuenow="{{ subject.completion_percentage }}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ subject.completion_percentage }}% Complete</small>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="btn-group w-100">
+                            <button type="button" class="btn btn-outline-primary"
+                                    onclick="viewSubjectDetails('{{ subject.id }}')">
+                                <i class="fas fa-info-circle"></i> Details
+                            </button>
+                            <button type="button" class="btn btn-outline-success"
+                                    onclick="manageAttendance('{{ subject.id }}')">
+                                <i class="fas fa-user-check"></i> Attendance
+                            </button>
+                            <button type="button" class="btn btn-outline-warning"
+                                    onclick="manageGrades('{{ subject.id }}')">
+                                <i class="fas fa-star"></i> Grades
+                            </button>
+                            {% if subject.is_active %}
+                            <button type="button" class="btn btn-outline-danger"
+                                    onclick="unassignSubject('{{ subject.id }}')">
+                                <i class="fas fa-times"></i> Unassign
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No Subjects Assigned</h4>
+                <p>You haven't been assigned any subjects yet. Click the "Assign New Subject" button to get started.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Weekly Timetable -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Weekly Schedule</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th class="timetable-header">Time</th>
+                            {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                            <th class="timetable-header">{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for time_slot in timetable %}
+                        <tr>
+                            <td class="timetable-header">{{ time_slot.time }}</td>
+                            {% for class in time_slot.classes %}
+                            <td>
+                                {% if class %}
+                                <div class="timetable-slot bg-primary bg-opacity-10">
+                                    <strong>{{ class.subject }}</strong><br>
+                                    <small>{{ class.class_name }}</small>
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Subject Modal -->
+<div class="modal fade" id="assignSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign New Subject</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignSubjectForm" method="POST" 
+                      action="{{ url_for('staff.assign_subject', staff_id=staff.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Class</label>
+                        <select class="form-select" name="class_id" required>
+                            <option value="">Select Class</option>
+                            {% for class in available_classes %}
+                            <option value="{{ class.id }}">
+                                {{ class.name }}-{{ class.section }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <select class="form-select" name="subject_id" required disabled>
+                            <option value="">Select Class First</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="assignSubjectForm" class="btn btn-primary">Assign Subject</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Details Modal -->
+<div class="modal fade" id="subjectDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Subject Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="subjectDetailsContent">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dynamic subject loading based on class selection
+document.querySelector('select[name="class_id"]')?.addEventListener('change', async function() {
+    const subjectSelect = document.querySelector('select[name="subject_id"]');
+    if (!this.value) {
+        subjectSelect.disabled = true;
+        subjectSelect.innerHTML = '<option value="">Select Class First</option>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/class/${this.value}/available-subjects`);
+        const subjects = await response.json();
+        
+        subjectSelect.innerHTML = `
+            <option value="">Select Subject</option>
+            ${subjects.map(subject => `
+                <option value="${subject.id}">${subject.name}</option>
+            `).join('')}
+        `;
+        subjectSelect.disabled = false;
+    } catch (error) {
+        console.error('Error loading subjects:', error);
+        alert('Error loading available subjects');
+    }
+});
+
+// View subject details
+async function viewSubjectDetails(subjectId) {
+    try {
+        const response = await fetch(`/api/subject/${subjectId}/details`);
+        const details = await response.json();
+        
+        document.getElementById('subjectDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Class Information</h6>
+                    <p><strong>Class:</strong> ${details.class_name}</p>
+                    <p><strong>Students:</strong> ${details.student_count}</p>
+                    <p><strong>Schedule:</strong> ${details.schedule}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Subject Statistics</h6>
+                    <p><strong>Average Attendance:</strong> ${details.avg_attendance}%</p>
+                    <p><strong>Average Grade:</strong> ${details.avg_grade}</p>
+                    <p><strong>Syllabus Completion:</strong> ${details.completion_percentage}%</p>
+                </div>
+            </div>
+            <hr>
+            <h6>Recent Activities</h6>
+            <div class="list-group">
+                ${details.recent_activities.map(activity => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${activity.title}</h6>
+                            <small>${activity.date}</small>
+                        </div>
+                        <p class="mb-1">${activity.description}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('subjectDetailsModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Error loading subject details:', error);
+        alert('Error loading subject details');
+    }
+}
+
+// Manage attendance
+function manageAttendance(subjectId) {
+    window.location.href = `/staff/subject/${subjectId}/attendance`;
+}
+
+// Manage grades
+function manageGrades(subjectId) {
+    window.location.href = `/staff/subject/${subjectId}/grades`;
+}
+
+// Unassign subject confirmation
+function unassignSubject(subjectId) {
+    if (confirm('Are you sure you want to unassign this subject? This action cannot be undone.')) {
+        fetch(`/api/staff/subject/${subjectId}/unassign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error unassigning subject');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error unassigning subject');
+        });
+    }
+}
+
+// Form validation
+document.getElementById('assignSubjectForm')?.addEventListener('submit', function(e) {
+    const classId = this.querySelector('[name="class_id"]').value;
+    const subjectId = this.querySelector('[name="subject_id"]').value;
+    
+    if (!classId || !subjectId) {
+        e.preventDefault();
+        alert('Please select both class and subject');
+        return;
+    }
+});
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+
+// Progress bar animation
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.completion-progress .progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.getAttribute('aria-valuenow') + '%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 100);
+    });
+});
+
+// Optional: Add chart visualization if needed
+/*
+function initializeCharts() {
+    // Add chart initialization code here if needed
+}
+*/
+</script>
+{% endblock %}

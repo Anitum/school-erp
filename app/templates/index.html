@@ -13,7 +13,7 @@
             <div class="card-body">
                 <h5 class="card-title">Total Students</h5>
                 <p class="card-text display-4">{{ stats.total_students }}</p>
-                <a href="{{ url_for('main.list_students') }}" class="btn btn-light">View Students</a>
+                <a href="{{ url_for('student.list_students') }}" class="btn btn-light">View Students</a>
             </div>
         </div>
     </div>
@@ -23,7 +23,7 @@
             <div class="card-body">
                 <h5 class="card-title">Total Staff</h5>
                 <p class="card-text display-4">{{ stats.total_staff }}</p>
-                <a href="{{ url_for('main.list_staff') }}" class="btn btn-light">View Staff</a>
+                <a href="{{ url_for('staff.list_staff') }}" class="btn btn-light">View Staff</a>
             </div>
         </div>
     </div>
@@ -33,7 +33,7 @@
             <div class="card-body">
                 <h5 class="card-title">Total Classes</h5>
                 <p class="card-text display-4">{{ stats.total_classes }}</p>
-                <a href="{{ url_for('main.list_classes') }}" class="btn btn-light">View Classes</a>
+                <a href="{{ url_for('class.list_classes') }}" class="btn btn-light">View Classes</a>
             </div>
         </div>
     </div>

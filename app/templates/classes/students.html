@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Class Students - {{ class_obj.name }}-{{ class_obj.section }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Class Students</h1>
+            <p class="text-muted">
+                {{ class_obj.name }}-{{ class_obj.section }} | 
+                {{ class_obj.students|length }}/{{ class_obj.capacity }} Students
+            </p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" 
+                    data-bs-toggle="modal" data-bs-target="#addStudentModal"
+                    {% if class_obj.students|length >= class_obj.capacity %}disabled{% endif %}>
+                <i class="fas fa-user-plus"></i> Add Student
+            </button>
+            <a href="{{ url_for('class.view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Class
+            </a>
+        </div>
+    </div>
+
+    <!-- Class Capacity Alert -->
+    {% if class_obj.students|length >= class_obj.capacity %}
+    <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle"></i>
+        Class capacity reached. Remove existing students before adding new ones.
+    </div>
+    {% endif %}
+
+    <!-- Students List -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Current Students</h5>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary" onclick="exportStudentList('excel')">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="exportStudentList('pdf')">
+                    <i class="fas fa-file-pdf"></i> Export PDF
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Student Details</th>
+                            <th>Parents</th>
+                            <th>Contact</th>
+                            <th>Transport</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in class_obj.students %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <div>{{ student.full_name }}</div>
+                                <small class="text-muted">DOB: {{ student.date_of_birth.strftime('%d-%m-%Y') }}</small>
+                            </td>
+                            <td>
+                                {% if student.parents %}
+                                <div class="small">
+                                    {% for parent in student.parents %}
+                                    <div>
+                                        {{ parent.relationship }}: {{ parent.full_name }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-danger">No parents registered</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.parents %}
+                                <div class="small">
+                                    {% for parent in student.parents %}
+                                    <div>{{ parent.phone_primary }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.transport_route %}
+                                <span class="badge bg-info">{{ student.transport_route.route_name }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">No Transport</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if student.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('student.view_student', student_id=student.id) }}" 
+                                       class="btn btn-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-warning" 
+                                            onclick="assignRollNumber('{{ student.id }}')"
+                                            title="Assign Roll Number">
+                                        <i class="fas fa-sort-numeric-down"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger" 
+                                            onclick="confirmRemoveStudent('{{ student.id }}')"
+                                            title="Remove from Class">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No students in this class</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-primary">Gender Distribution</h6>
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-success">Transport Usage</h6>
+                    <canvas id="transportChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-info">Age Distribution</h6>
+                    <canvas id="ageChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-warning">Status Overview</h6>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="addStudentModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Student to Class</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Search Students -->
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="studentSearch" 
+                           placeholder="Search students by name, ID or parent's name">
+                </div>
+
+                <!-- Available Students Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Current Class</th>
+                                <th>Parents</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in available_students %}
+                            <tr>
+                                <td>{{ student.full_name }}</td>
+                                <td>
+                                    {% if student.class_group %}
+                                        {{ student.class_group.name }}-{{ student.class_group.section }}
+                                    {% else %}
+                                        Not Assigned
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student.parents %}
+                                        {% for parent in student.parents[:1] %}
+                                            {{ parent.full_name }}
+                                        {% endfor %}
+                                    {% else %}
+                                        No parents registered
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" 
+                                          action="{{ url_for('class.add_student', class_id=class_obj.id) }}">
+                                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            Add to Class
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Roll Number Modal -->
+<div class="modal fade" id="rollNumberModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Roll Number</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rollNumberForm" method="POST">
+                    <input type="hidden" name="student_id" id="rollNumberStudentId">
+                    <div class="mb-3">
+                        <label class="form-label">Roll Number</label>
+                        <input type="number" class="form-control" name="roll_number" 
+                               min="1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="rollNumberForm" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Initialize charts
+function initializeCharts() {
+    // Gender distribution chart
+    new Chart(document.getElementById('genderChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                data: [
+                    {{ class_obj.students|selectattr('gender', 'equalto', 'MALE')|list|length }},
+                    {{ class_obj.students|selectattr('gender', 'equalto', 'FEMALE')|list|length }}
+                ],
+                backgroundColor: ['#36A2EB', '#FF6384']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Transport usage chart
+    new Chart(document.getElementById('transportChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Using Transport', 'No Transport'],
+            datasets: [{
+                data: [
+                    {{ class_obj.students|selectattr('transport_route')|list|length }},
+                    {{ class_obj.students|rejectattr('transport_route')|list|length }}
+                ],
+                backgroundColor: ['#4BC0C0', '#FF9F40']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Initialize other charts similarly
+}
+
+// Student search functionality
+document.getElementById('studentSearch').addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#addStudentModal tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchText) ? '' : 'none';
+    });
+});
+
+// Roll number assignment
+function assignRollNumber(studentId) {
+    document.getElementById('rollNumberStudentId').value = studentId;
+    const modal = new bootstrap.Modal(document.getElementById('rollNumberModal'));
+    modal.show();
+}
+
+// Remove student confirmation
+function confirmRemoveStudent(studentId) {
+    if (confirm('Are you sure you want to remove this student from the class?')) {
+        window.location.href = `/classes/{{ class_obj.id }}/remove_student/${studentId}`;
+    }
+}
+
+// Export functions
+function exportStudentList(format) {
+    window.location.href = `/classes/{{ class_obj.id }}/export_students?format=${format}`;
+}
+
+// Initialize tooltips and charts
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    initializeCharts();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Classes - School Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Classes</h1>
+    <a href="{{ url_for('main.add_class') }}" class="btn btn-primary">Add New Class</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Section</th>
+                        <th>Academic Year</th>
+                        <th>Primary Teacher</th>
+                        <th>Capacity</th>
+                        <th>Students</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>{{ class.id }}</td>
+                        <td>{{ class.name }}</td>
+                        <td>{{ class.section }}</td>
+                        <td>{{ class.academic_year }}</td>
+                        <td>
+                            {% if class.primary_teacher %}
+                                {{ class.primary_teacher.first_name }} {{ class.primary_teacher.last_name }}
+                            {% else %}
+                                Not Assigned
+                            {% endif %}
+                        </td>
+                        <td>{{ class.capacity }}</td>
+                        <td>{{ class.students|length }} / {{ class.capacity }}</td>
+                        <td>
+                            <span class="badge {% if class.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ 'Active' if class.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" class="btn btn-info">View</a>
+                                <a href="#" class="btn btn-warning">Edit</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

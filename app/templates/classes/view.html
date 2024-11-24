@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Class Details - {{ class_obj.name }}-{{ class_obj.section }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">
+                Class {{ class_obj.name }}-{{ class_obj.section }}
+                {% if not class_obj.is_active %}
+                <span class="badge bg-danger">Inactive</span>
+                {% endif %}
+            </h1>
+            <p class="text-muted">Academic Year: {{ class_obj.academic_year }}-{{ class_obj.academic_year + 1 }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('class.edit_class', class_id=class_obj.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit Class
+            </a>
+            {% if class_obj.is_active %}
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#promoteModal">
+                <i class="fas fa-graduation-cap"></i> Promote Class
+            </button>
+            {% endif %}
+            <a href="{{ url_for('class.list_classes') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-primary">Total Students</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">{{ student_stats.total }}</h2>
+                        <small class="text-muted">Capacity: {{ class_obj.capacity }}</small>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-success">{{ student_stats.active }} Active</small>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: {{ (student_stats.active / class_obj.capacity * 100)|round|int }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-info">Gender Distribution</h6>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h2 class="mb-0">{{ student_stats.male }}</h2>
+                            <small class="text-muted">Male</small>
+                        </div>
+                        <div>
+                            <h2 class="mb-0">{{ student_stats.female }}</h2>
+                            <small class="text-muted">Female</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-success">Subjects & Teachers</h6>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h2 class="mb-0">{{ subject_stats.total }}</h2>
+                            <small class="text-muted">Subjects</small>
+                        </div>
+                        <div>
+                            <h2 class="mb-0">{{ subject_stats.teachers }}</h2>
+                            <small class="text-muted">Teachers</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-warning">Today's Attendance</h6>
+                    <h2 class="mb-0">{{ attendance_percentage|default('N/A') }}</h2>
+                    <small class="text-muted">Present Today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Class Information -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Class Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Class Teacher</dt>
+                        <dd class="col-sm-8">
+                            {% if class_obj.primary_teacher %}
+                                <div>{{ class_obj.primary_teacher.full_name }}</div>
+                                <small class="text-muted">
+                                    {{ class_obj.primary_teacher.phone }}
+                                </small>
+                            {% else %}
+                                <span class="text-danger">Not Assigned</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">Branch</dt>
+                        <dd class="col-sm-8">
+                            {{ class_obj.primary_teacher.branch.name if class_obj.primary_teacher else 'N/A' }}
+                        </dd>
+
+                        <dt class="col-sm-4">Capacity</dt>
+                        <dd class="col-sm-8">
+                            {{ student_stats.total }}/{{ class_obj.capacity }}
+                            {% set utilization = (student_stats.total / class_obj.capacity * 100)|round|int %}
+                            <div class="progress" style="height: 4px;">
+                                <div class="progress-bar {% if utilization > 90 %}bg-danger
+                                                        {% elif utilization > 75 %}bg-warning
+                                                        {% else %}bg-success{% endif %}" 
+                                     style="width: {{ utilization }}%">
+                                </div>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if class_obj.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ 'Active' if class_obj.is_active else 'Inactive' }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('class.class_students', class_id=class_obj.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-users"></i> Manage Students
+                        </a>
+                        <a href="{{ url_for('class.class_subjects', class_id=class_obj.id) }}" 
+                           class="btn btn-outline-info">
+                            <i class="fas fa-book"></i> Manage Subjects
+                        </a>
+                        <a href="{{ url_for('class.class_timetable', class_id=class_obj.id) }}" 
+                           class="btn btn-outline-success">
+                            <i class="fas fa-calendar-alt"></i> Class Timetable
+                        </a>
+                        <button type="button" class="btn btn-outline-warning"
+                                onclick="takeAttendance('{{ class_obj.id }}')">
+                            <i class="fas fa-clipboard-check"></i> Take Attendance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students List -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Student List</h5>
+                    <a href="{{ url_for('class.class_students', class_id=class_obj.id) }}" 
+                       class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Roll No</th>
+                                    <th>Name</th>
+                                    <th>Gender</th>
+                                    <th>Parent Contact</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in class_obj.students[:5] %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ student.full_name }}</td>
+                                    <td>{{ student.gender if hasattr(student, 'gender') else 'N/A' }}</td>
+                                    <td>
+                                        {% if student.parents %}
+                                            {% for parent in student.parents[:1] %}
+                                            {{ parent.phone_primary }}
+                                            {% endfor %}
+                                        {% else %}
+                                            Not Available
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ 'Active' if student.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('student.view_student', student_id=student.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No students in this class</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects List -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Subjects</h5>
+                    <a href="{{ url_for('class.class_subjects', class_id=class_obj.id) }}" 
+                       class="btn btn-sm btn-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Teacher</th>
+                                    <th>Classes/Week</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subject in class_obj.subjects %}
+                                <tr>
+                                    <td>{{ subject.name }}</td>
+                                    <td>
+                                        {% if subject.teacher %}
+                                            {{ subject.teacher.full_name }}
+                                        {% else %}
+                                            <span class="text-danger">Not Assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ subject.weekly_classes|default('N/A') }}</td>
+                                    <td>
+                                        <span class="badge {% if subject.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ 'Active' if subject.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No subjects assigned yet</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Promote Class Modal -->
+<div class="modal fade" id="promoteModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Promote Class</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <h6>This action will:</h6>
+                    <ul class="mb-0">
+                        <li>Create a new class for next academic year</li>
+                        <li>Move all active students to the new class</li>
+                        <li>Mark current class as inactive</li>
+                    </ul>
+                </div>
+                <form id="promoteForm" method="POST" 
+                      action="{{ url_for('class.promote_class', class_id=class_obj.id) }}">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmPromotion" required>
+                        <label class="form-check-label" for="confirmPromotion">
+                            I understand this action cannot be undone
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="promoteForm" class="btn btn-success">Promote Class</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Take attendance function
+function takeAttendance(classId) {
+    window.location.href = `/attendance/class/${classId}/take`;
+}
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+
+// Promotion form validation
+document.getElementById('promoteForm')?.addEventListener('submit', function(e) {
+    if (!document.getElementById('confirmPromotion').checked) {
+        e.preventDefault();
+        alert('Please confirm that you understand the promotion process');
+    }
+});
+</script>
+{% endblock %}

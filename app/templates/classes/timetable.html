@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+
+{% block title %}Class Timetable - {{ class_obj.name }}-{{ class_obj.section }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.timetable-cell {
+    min-height: 100px;
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timetable-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.timetable-slot {
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    cursor: move;
+}
+
+.timetable-slot.dragging {
+    opacity: 0.5;
+}
+
+.time-column {
+    width: 100px;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+.subject-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-right: 5px;
+}
+
+.teacher-indicator {
+    font-size: 0.8rem;
+    color: #6c757d;
+    display: block;
+    margin-top: 2px;
+}
+
+.conflict-warning {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #dc3545;
+    cursor: help;
+}
+
+.break-slot {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 10px;
+    font-style: italic;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Class Timetable</h1>
+            <p class="text-muted">{{ class_obj.name }}-{{ class_obj.section }}</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-success" onclick="saveTimetable()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                <i class="fas fa-cog"></i> Schedule Settings
+            </button>
+            <button type="button" class="btn btn-warning" onclick="generateTimetable()">
+                <i class="fas fa-magic"></i> Auto Generate
+            </button>
+            <a href="{{ url_for('class.view_class', class_id=class_obj.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Class
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert for Unsaved Changes -->
+    <div class="alert alert-warning" id="unsavedChanges" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        You have unsaved changes. Please save your changes before leaving this page.
+    </div>
+
+    <!-- Timetable Controls -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="includeSaturday" 
+                               {% if include_saturday %}checked{% endif %}>
+                        <label class="form-check-label" for="includeSaturday">Include Saturday</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="viewMode">
+                        <option value="subject">View by Subject</option>
+                        <option value="teacher">View by Teacher</option>
+                    </select>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button type="button" class="btn btn-outline-primary" onclick="printTimetable()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success" onclick="exportTimetable('excel')">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="exportTimetable('pdf')">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="timetableGrid">
+                    <thead>
+                        <tr>
+                            <th class="time-column">Time</th>
+                            <th>Monday</th>
+                            <th>Tuesday</th>
+                            <th>Wednesday</th>
+                            <th>Thursday</th>
+                            <th>Friday</th>
+                            {% if include_saturday %}
+                            <th>Saturday</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in time_slots %}
+                        <tr>
+                            <td class="time-column">{{ slot.start_time }} - {{ slot.end_time }}</td>
+                            {% for day in days %}
+                            <td>
+                                {% if slot.is_break %}
+                                <div class="break-slot">Break Time</div>
+                                {% else %}
+                                <div class="timetable-cell" 
+                                     data-day="{{ day }}" 
+                                     data-time="{{ slot.start_time }}"
+                                     ondrop="drop(event)" 
+                                     ondragover="allowDrop(event)">
+                                    {% set period = get_period(day, slot.start_time) %}
+                                    {% if period %}
+                                    <div class="timetable-slot" 
+                                         draggable="true"
+                                         ondragstart="drag(event)"
+                                         data-period-id="{{ period.id }}"
+                                         style="background-color: {{ get_subject_color(period.subject_id) }}">
+                                        <span class="subject-pill">{{ period.subject.name }}</span>
+                                        {% if period.subject.teacher %}
+                                        <span class="teacher-indicator">
+                                            {{ period.subject.teacher.full_name }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Subjects -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Available Subjects</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2" id="subjectPalette">
+                {% for subject in class_obj.subjects %}
+                <div class="timetable-slot" 
+                     draggable="true"
+                     ondragstart="drag(event)"
+                     data-subject-id="{{ subject.id }}"
+                     style="background-color: {{ get_subject_color(subject.id) }}">
+                    <span class="subject-pill">{{ subject.name }}</span>
+                    {% if subject.teacher %}
+                    <span class="teacher-indicator">{{ subject.teacher.full_name }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Settings Modal -->
+<div class="modal fade" id="settingsModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schedule Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleSettingsForm">
+                    <div class="mb-3">
+                        <label class="form-label">School Hours</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="time" class="form-control" name="start_time" 
+                                       value="{{ schedule_settings.start_time }}">
+                                <small class="text-muted">Start Time</small>
+                            </div>
+                            <div class="col-6">
+                                <input type="time" class="form-control" name="end_time" 
+                                       value="{{ schedule_settings.end_time }}">
+                                <small class="text-muted">End Time</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Period Duration</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="period_duration" 
+                                   value="{{ schedule_settings.period_duration }}" min="30" max="120">
+                            <span class="input-group-text">minutes</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Break Times</label>
+                        <div id="breakTimes">
+                            {% for break in schedule_settings.breaks %}
+                            <div class="row mb-2">
+                                <div class="col-5">
+                                    <input type="time" class="form-control" name="break_start[]" 
+                                           value="{{ break.start_time }}">
+                                </div>
+                                <div class="col-5">
+                                    <input type="time" class="form-control" name="break_end[]" 
+                                           value="{{ break.end_time }}">
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-danger" onclick="removeBreak(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBreak()">
+                            Add Break
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Constraints</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="prevent_teacher_conflict" 
+                                   id="preventTeacherConflict" checked>
+                            <label class="form-check-label" for="preventTeacherConflict">
+                                Prevent teacher schedule conflicts
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="max_daily_periods" 
+                                   id="maxDailyPeriods" checked>
+                            <label class="form-check-label" for="maxDailyPeriods">
+                                Limit maximum daily periods per subject
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let hasUnsavedChanges = false;
+let draggedElement = null;
+
+// Drag and drop handlers
+function drag(event) {
+    draggedElement = event.target;
+    event.target.classList.add('dragging');
+    event.dataTransfer.setData('text/plain', '');  // Required for Firefox
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function drop(event) {
+    event.preventDefault();
+    const cell = event.target.closest('.timetable-cell');
+    if (!cell) return;
+
+    // Remove dragging class
+    draggedElement.classList.remove('dragging');
+
+    // Check for teacher conflicts
+    if (document.getElementById('preventTeacherConflict').checked) {
+        const teacherId = draggedElement.querySelector('.teacher-indicator')?.dataset.teacherId;
+        if (teacherId && hasTeacherConflict(teacherId, cell)) {
+            alert('Teacher schedule conflict detected!');
+            return;
+        }
+    }
+
+    // Check daily subject limit
+    if (document.getElementById('maxDailyPeriods').checked) {
+        const subjectId = draggedElement.dataset.subjectId;
+        if (subjectId && exceededDailyLimit(subjectId, cell)) {
+            alert('Maximum daily periods for this subject exceeded!');
+            return;
+        }
+    }
+
+    // Move or copy the period
+    if (draggedElement.closest('#subjectPalette')) {
+        // Create new period from palette
+        const newPeriod = draggedElement.cloneNode(true);
+        cell.appendChild(newPeriod);
+    } else {
+        // Move existing period
+        cell.appendChild(draggedElement);
+    }
+
+    hasUnsavedChanges = true;
+    document.getElementById('unsavedChanges').style.display = 'block';
+}
+
+// Check for teacher conflicts
+function hasTeacherConflict(teacherId, targetCell) {
+    const day = targetCell.dataset.day;
+    const time = targetCell.dataset.time;
+    const conflictingCell = document.querySelector(
+        `.timetable-cell[data-day="${day}"][data-time="${time}"] .teacher-indicator[data-teacher-id="${teacherId}"]`
+    );
+    return conflictingCell !== null;
+}
+
+// Check for daily subject limit
+function exceededDailyLimit(subjectId, targetCell) {
+    const day = targetCell.dataset.day;
+    const dailyCount = document.querySelectorAll(
+        `.timetable-cell[data-day="${day}"] .timetable-slot[data-subject-id="${subjectId}"]`
+    ).length;
+    return dailyCount >= 2;  // Maximum 2 periods per subject per day
+}
+
+// Save timetable
+async function saveTimetable() {
+    const timetable = [];
+    document.querySelectorAll('.timetable-cell').forEach(cell => {
+        const slot = cell.querySelector('.timetable-slot');
+        if (slot) {
+            timetable.push({
+                day: cell.dataset.day,
+                time: cell.dataset.time,
+                subject_id: slot.dataset.subjectId,
+                period_id: slot.dataset.periodId
+            });
+        }
+    });
+
+    try {
+        const response = await fetch(`/class/${class_obj.id}/save_timetable`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ timetable: timetable })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            hasUnsavedChanges = false;
+            document.getElementById('unsavedChanges').style.display = 'none';
+            alert('Timetable saved successfully!');
+        } else {
+            alert(result.message || 'Error saving timetable');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving timetable');
+    }
+}
+
+// Auto-generate timetable
+async function generateTimetable() {
+    if (!confirm('This will replace the current timetable. Continue?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/class/${class_obj.id}/generate_timetable`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert(result.message || 'Error generating timetable');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error generating timetable');
+    }
+}
+
+// Break time management
+function addBreak() {
+    const breakTimes = document.getElementById('breakTimes');
+    const breakRow = document.createElement('div');
+    breakRow.className = 'row mb-2';
+    breakRow.innerHTML = `
+        <div class="col-5">
+            <input type="time" class="form-control" name="break_start[]">
+        </div>
+        <div class="col-5">
+            <input type="time" class="form-control" name="break_end[]">
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-danger" onclick="removeBreak(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    breakTimes.appendChild(breakRow);
+}
+
+function removeBreak(button) {
+    button.closest('.row').remove();
+}
+
+// Save schedule settings
+async function saveSettings() {
+    const form = document.getElementById('scheduleSettingsForm');
+    const breaks = [];
+    
+    // Collect break times
+    form.querySelectorAll('[name="break_start[]"]').forEach((startInput, index) => {
+        const endInput = form.querySelectorAll('[name="break_end[]"]')[index];
+        if (startInput.value && endInput.value) {
+            breaks.push({
+                start_time: startInput.value,
+                end_time: endInput.value
+            });
+        }
+    });
+
+    const settings = {
+        start_time: form.querySelector('[name="start_time"]').value,
+        end_time: form.querySelector('[name="end_time"]').value,
+        period_duration: form.querySelector('[name="period_duration"]').value,
+        breaks: breaks,
+        prevent_teacher_conflict: form.querySelector('#preventTeacherConflict').checked,
+        max_daily_periods: form.querySelector('#maxDailyPeriods').checked
+    };
+
+    try {
+        const response = await fetch(`/class/${class_obj.id}/save_schedule_settings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert(result.message || 'Error saving settings');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error saving settings');
+    }
+}
+
+// Export functions
+function exportTimetable(format) {
+    window.location.href = `/class/${class_obj.id}/export_timetable?format=${format}`;
+}
+
+function printTimetable() {
+    window.print();
+}
+
+// View mode switching
+document.getElementById('viewMode').addEventListener('change', function() {
+    const teacherView = this.value === 'teacher';
+    document.querySelectorAll('.teacher-indicator').forEach(indicator => {
+        indicator.style.display = teacherView ? 'block' : 'none';
+    });
+    document.querySelectorAll('.subject-pill').forEach(pill => {
+        pill.style.display = teacherView ? 'none' : 'inline-block';
+    });
+});
+
+// Saturday toggle
+document.getElementById('includeSaturday').addEventListener('change', function() {
+    if (!confirm('Changing this setting will clear the current timetable. Continue?')) {
+        this.checked = !this.checked;
+        return;
+    }
+    window.location.reload();
+});
+
+// Prevent leaving with unsaved changes
+window.addEventListener('beforeunload', function(e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}

@@ -360,7 +360,18 @@ class FeeType(db.Model):
 
     def __repr__(self):
         return f'<FeeType {self.name}>'
-
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'amount': float(self.amount),
+            'frequency': self.frequency,
+            'description': self.description,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if hasattr(self, 'updated_at') and self.updated_at else None
+        }
 class FeeTransaction(db.Model, TimestampMixin):
     """Fee transactions for both students (fees) and staff (salary)"""
     __tablename__ = 'fee_transaction'

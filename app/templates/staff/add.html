@@ -1,112 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}Add Staff - School Management{% endblock %}
+{% block title %}Add Staff Member - School ERP{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 offset-md-2">
-        <div class="card">
-            <div class="card-header">
-                <h2>Add New Staff Member</h2>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="middle_name" class="form-label">Middle Name</label>
-                            <input type="text" class="form-control" id="middle_name" name="middle_name">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" required>
-                        </div>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">Add New Staff Member</h2>
+                        <a href="{{ url_for('staff.list_staff') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
                     </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Staff Type Selection -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="staff_type" 
+                                               id="typeTeacher" value="TEACHER" required>
+                                        <label class="form-check-label" for="typeTeacher">Teacher</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="staff_type" 
+                                               id="typeEmployee" value="EMPLOYEE" required>
+                                        <label class="form-check-label" for="typeEmployee">Employee</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="staff_type" class="form-label">Staff Type</label>
-                            <select class="form-select" id="staff_type" name="staff_type" required>
-                                <option value="">Select Type</option>
-                                <option value="TEACHER">Teacher</option>
-                                <option value="EMPLOYEE">Employee</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="branch_id" class="form-label">Branch</label>
-                            <select class="form-select" id="branch_id" name="branch_id" required>
-                                <option value="">Select Branch</option>
-                                {% for branch in branches %}
-                                <option value="{{ branch.id }}">{{ branch.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                        <!-- Personal Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Personal Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="first_name" class="form-label">First Name *</label>
+                                        <input type="text" class="form-control" id="first_name" 
+                                               name="first_name" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="middle_name" class="form-label">Middle Name</label>
+                                        <input type="text" class="form-control" id="middle_name" 
+                                               name="middle_name">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="last_name" class="form-label">Last Name *</label>
+                                        <input type="text" class="form-control" id="last_name" 
+                                               name="last_name" required>
+                                    </div>
+                                </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="gender" class="form-label">Gender</label>
-                            <select class="form-select" id="gender" name="gender" required>
-                                <option value="">Select Gender</option>
-                                <option value="MALE">Male</option>
-                                <option value="FEMALE">Female</option>
-                                <option value="OTHER">Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" required>
-                        </div>
-                    </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="gender" class="form-label">Gender *</label>
+                                        <select class="form-select" id="gender" name="gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="MALE">Male</option>
+                                            <option value="FEMALE">Female</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="phone" class="form-label">Phone Number *</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email">
+                                    </div>
+                                </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
+                                        <input type="text" class="form-control" id="aadhaar_number" 
+                                               name="aadhaar_number" pattern="[0-9]{12}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="joining_date" class="form-label">Joining Date *</label>
+                                        <input type="date" class="form-control" id="joining_date" 
+                                               name="joining_date" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="branch_id" class="form-label">Branch *</label>
+                                        <select class="form-select" id="branch_id" name="branch_id" required>
+                                            <option value="">Select Branch</option>
+                                            {% for branch in branches %}
+                                            <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="qualification" class="form-label">Qualification</label>
-                            <input type="text" class="form-control" id="qualification" name="qualification">
-                        </div>
-                    </div>
 
-                    <h4 class="mb-3">Address Information</h4>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="street_name" class="form-label">Street Name</label>
-                            <input type="text" class="form-control" id="street_name" name="street_name" required>
+                        <!-- Professional Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Professional Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="qualification" class="form-label">Qualification</label>
+                                        <input type="text" class="form-control" id="qualification" 
+                                               name="qualification">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="experience_years" class="form-label">Years of Experience</label>
+                                        <input type="number" class="form-control" id="experience_years" 
+                                               name="experience_years" min="0">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="locality" class="form-label">Locality</label>
-                            <input type="text" class="form-control" id="locality" name="locality" required>
-                        </div>
-                    </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="city" class="form-label">City</label>
-                            <input type="text" class="form-control" id="city" name="city" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="state" class="form-label">State</label>
-                            <input type="text" class="form-control" id="state" name="state" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="pin_code" class="form-label">PIN Code</label>
-                            <input type="text" class="form-control" id="pin_code" name="pin_code" required>
-                        </div>
-                    </div>
+                        <!-- Address Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Address Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="street_name" class="form-label">Street Name *</label>
+                                        <input type="text" class="form-control" id="street_name" 
+                                               name="street_name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="locality" class="form-label">Locality *</label>
+                                        <input type="text" class="form-control" id="locality" 
+                                               name="locality" required>
+                                    </div>
+                                </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Add Staff Member</button>
-                        <a href="{{ url_for('main.list_staff') }}" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="city" class="form-label">City *</label>
+                                        <input type="text" class="form-control" id="city" name="city" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="state" class="form-label">State *</label>
+                                        <input type="text" class="form-control" id="state" name="state" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="pin_code" class="form-label">PIN Code *</label>
+                                        <input type="text" class="form-control" id="pin_code" 
+                                               name="pin_code" required pattern="[0-9]{6}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Document Upload -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="mb-0">Documents</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="document_type" class="form-label">Document Type</label>
+                                        <select class="form-select" id="document_type" name="document_type">
+                                            <option value="AADHAAR">Aadhaar Card</option>
+                                            <option value="PAN">PAN Card</option>
+                                            <option value="QUALIFICATION">Qualification Certificate</option>
+                                            <option value="EXPERIENCE">Experience Certificate</option>
+                                            <option value="PHOTO">Photograph</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="documents" class="form-label">Upload Documents</label>
+                                        <input type="file" class="form-control" id="documents" 
+                                               name="documents" multiple>
+                                        <small class="text-muted">
+                                            You can select multiple files. Max size: 5MB each
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="document_description" class="form-label">Description</label>
+                                        <input type="text" class="form-control" id="document_description" 
+                                               name="document_description">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-secondary me-2">Reset Form</button>
+                            <button type="submit" class="btn btn-primary">Add Staff Member</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Phone number validation
+document.getElementById('phone').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+});
+
+// Aadhaar number validation
+document.getElementById('aadhaar_number').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+});
+
+// PIN code validation
+document.getElementById('pin_code').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+});
+
+// File validation
+document.getElementById('documents').addEventListener('change', function(e) {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    
+    Array.from(this.files).forEach(file => {
+        if (file.size > maxSize) {
+            alert(`File ${file.name} is too large. Maximum size is 5MB`);
+            this.value = '';
+            return;
+        }
+        if (!allowedTypes.includes(file.type)) {
+            alert(`File ${file.name} has invalid type. Allowed types are: JPEG, PNG, PDF`);
+            this.value = '';
+            return;
+        }
+    });
+});
+</script>
 {% endblock %}

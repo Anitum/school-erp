@@ -1,61 +1,177 @@
 {% extends "base.html" %}
 
-{% block title %}Staff - School Management{% endblock %}
+{% block title %}Staff Management - School ERP{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Staff</h1>
-    <a href="{{ url_for('main.add_staff') }}" class="btn btn-primary">Add New Staff</a>
-</div>
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Staff Management</h1>
+        <a href="{{ url_for('staff.add_staff') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Staff
+        </a>
+    </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Branch</th>
-                        <th>Contact</th>
-                        <th>Qualification</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for member in staff %}
-                    <tr>
-                        <td>{{ member.id }}</td>
-                        <td>{{ member.first_name }} {{ member.middle_name or '' }} {{ member.last_name }}</td>
-                        <td>
-                            <span class="badge {% if member.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
-                                {{ member.staff_type }}
-                            </span>
-                        </td>
-                        <td>{{ member.branch.name }}</td>
-                        <td>
-                            <div>{{ member.phone }}</div>
-                            <small class="text-muted">{{ member.email or 'No email' }}</small>
-                        </td>
-                        <td>{{ member.qualification or 'N/A' }}</td>
-                        <td>
-                            <span class="badge {% if member.is_active %}bg-success{% else %}bg-danger{% endif %}">
-                                {{ 'Active' if member.is_active else 'Inactive' }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="#" class="btn btn-info">View</a>
-                                <a href="#" class="btn btn-warning">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="branch_id" class="form-label">Branch</label>
+                    <select class="form-select" id="branch_id" name="branch_id">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch == branch.id %}selected{% endif %}>
+                            {{ branch.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="staff_type" class="form-label">Staff Type</label>
+                    <select class="form-select" id="staff_type" name="staff_type">
+                        <option value="">All Types</option>
+                        <option value="TEACHER" {% if selected_type == 'TEACHER' %}selected{% endif %}>Teacher</option>
+                        <option value="EMPLOYEE" {% if selected_type == 'EMPLOYEE' %}selected{% endif %}>Employee</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Name, Email, or Phone" value="{{ search }}">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{{ url_for('staff.list_staff') }}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Staff List -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Branch</th>
+                            <th>Contact</th>
+                            <th>Qualification</th>
+                            <th>Experience</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for staff in staff_members %}
+                        <tr>
+                            <td>{{ staff.id }}</td>
+                            <td>
+                                <div>{{ staff.full_name }}</div>
+                                <small class="text-muted">Since: {{ staff.joining_date.strftime('%d-%m-%Y') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if staff.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ staff.staff_type }}
+                                </span>
+                            </td>
+                            <td>{{ staff.branch.name }}</td>
+                            <td>
+                                <div>{{ staff.phone }}</div>
+                                {% if staff.email %}
+                                <small class="text-muted">{{ staff.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ staff.qualification or 'N/A' }}</td>
+                            <td>
+                                {% if staff.experience_years %}
+                                {{ staff.experience_years }} years
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if staff.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if staff.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('staff.view_staff', staff_id=staff.id) }}" 
+                                       class="btn btn-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('staff.edit_staff', staff_id=staff.id) }}" 
+                                       class="btn btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('staff.staff_attendance', staff_id=staff.id) }}" 
+                                       class="btn btn-secondary" title="Attendance">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </a>
+                                    {% if staff.staff_type == 'TEACHER' %}
+                                    <a href="{{ url_for('staff.staff_subjects', staff_id=staff.id) }}" 
+                                       class="btn btn-primary" title="Subjects">
+                                        <i class="fas fa-book"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('staff.staff_salary', staff_id=staff.id) }}" 
+                                       class="btn btn-success" title="Salary">
+                                        <i class="fas fa-money-bill"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center">No staff members found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-submit form when filters change
+    document.querySelectorAll('select[name="branch_id"], select[name="staff_type"], select[name="status"]')
+        .forEach(select => {
+            select.addEventListener('change', () => {
+                select.closest('form').submit();
+            });
+        });
+
+    // Add debounce for search input
+    let searchTimeout;
+    document.querySelector('input[name="search"]').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.closest('form').submit();
+        }, 500);
+    });
+</script>
 {% endblock %}

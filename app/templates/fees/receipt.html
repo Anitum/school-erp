@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Fee Receipt - #{{ transaction.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-only {
+            display: block !important;
+        }
+        body {
+            padding: 0;
+            background: white;
+        }
+        .receipt-container {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    }
+    
+    .school-logo {
+        max-height: 80px;
+    }
+    
+    .receipt-container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        background: white;
+    }
+    
+    .receipt-header {
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .receipt-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .receipt-body {
+        margin-bottom: 30px;
+    }
+    
+    .info-row {
+        margin-bottom: 10px;
+    }
+    
+    .amount-in-words {
+        font-style: italic;
+        color: #666;
+    }
+    
+    .authorized-signature {
+        margin-top: 50px;
+        text-align: right;
+    }
+    
+    .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 100px;
+        opacity: 0.05;
+        pointer-events: none;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Print/Download Buttons -->
+    <div class="text-end mb-3 no-print">
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <button class="btn btn-success" onclick="downloadPDF()">
+            <i class="bi bi-download"></i> Download PDF
+        </button>
+        <button class="btn btn-secondary" onclick="window.close()">
+            Close
+        </button>
+    </div>
+
+    <!-- Receipt Content -->
+    <div class="receipt-container">
+        {% if transaction.transaction_status == 'PAID' %}
+            <div class="watermark">PAID</div>
+        {% else %}
+            <div class="watermark">COPY</div>
+        {% endif %}
+
+        <!-- School Header -->
+        <div class="receipt-header">
+            <img src="{{ url_for('static', filename='img/school-logo.png') }}" alt="School Logo" class="school-logo">
+            <h1 class="school-name">{{ school_name }}</h1>
+            <div class="school-address">{{ school_address }}</div>
+            <div class="school-contact">
+                Tel: {{ school_phone }} | Email: {{ school_email }}
+            </div>
+        </div>
+
+        <!-- Receipt Details -->
+        <div class="receipt-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <strong>Receipt No:</strong> #{{ transaction.id }}
+                    </div>
+                    <div class="info-row">
+                        <strong>Date:</strong> {{ transaction.payment_date|date }}
+                    </div>
+                    <div class="info-row">
+                        <strong>Payment Method:</strong> {{ transaction.payment_method }}
+                        {% if transaction.reference_number %}
+                        (Ref: {{ transaction.reference_number }})
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <strong>Student Name:</strong> {{ transaction.student.full_name }}
+                    </div>
+                    <div class="info-row">
+                        <strong>Class:</strong> {{ transaction.student.class_group.name }}-{{ transaction.student.class_group.section }}
+                    </div>
+                    <div class="info-row">
+                        <strong>Admission No:</strong> {{ transaction.student.id }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fee Details -->
+            <div class="table-responsive mt-4">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th>Due Date</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                {{ transaction.fee_type.name }}
+                                {% if transaction.remarks %}
+                                <br>
+                                <small class="text-muted">{{ transaction.remarks }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.due_date|date }}</td>
+                            <td class="text-end">₹{{ transaction.amount|format_money }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>Total Amount</strong></td>
+                            <td class="text-end"><strong>₹{{ transaction.amount|format_money }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Amount in Words -->
+            <div class="amount-in-words mt-3">
+                Amount (in words): {{ transaction.amount|number_to_words }} only
+            </div>
+
+            <!-- Signature -->
+            <div class="authorized-signature">
+                <div class="signature-line">
+                    _______________________
+                </div>
+                <div class="mt-2">Authorized Signatory</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-4 pt-4 border-top text-center">
+            <small class="text-muted">
+                This is a computer generated receipt and does not require a signature.
+                {% if transaction.transaction_status == 'PAID' %}
+                <br>
+                <strong>Original Receipt</strong>
+                {% else %}
+                <br>
+                <strong>Duplicate Copy</strong>
+                {% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Function to download PDF (you'll need to implement this with a PDF library)
+    function downloadPDF() {
+        // Use window.location to trigger PDF generation route
+        window.location.href = "{{ url_for('fees.download_receipt_pdf', transaction_id=transaction.id) }}";
+    }
+
+    // Auto print if URL has print parameter
+    if (new URLSearchParams(window.location.search).has('print')) {
+        window.print();
+    }
+</script>
+{% endblock %}

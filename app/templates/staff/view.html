@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Details - {{ staff.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Staff Details</h1>
+            <p class="text-muted">
+                {{ staff.staff_type }} | ID: {{ staff.id }}
+            </p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('staff.edit_staff', staff_id=staff.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit Details
+            </a>
+            <a href="{{ url_for('staff.list_staff') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Personal Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Personal Information</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="120">Name</th>
+                            <td>{{ staff.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Gender</th>
+                            <td>{{ staff.gender }}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone</th>
+                            <td>{{ staff.phone }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email</th>
+                            <td>{{ staff.email or 'Not Provided' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>
+                                <span class="badge {% if staff.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if staff.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professional Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h3 class="card-title mb-0">Professional Information</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="120">Branch</th>
+                            <td>{{ staff.branch.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Role</th>
+                            <td>
+                                <span class="badge {% if staff.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ staff.staff_type }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Joining Date</th>
+                            <td>{{ staff.joining_date.strftime('%d-%m-%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Qualification</th>
+                            <td>{{ staff.qualification or 'Not Provided' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Experience</th>
+                            <td>{{ staff.experience_years or 0 }} years</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact & Address Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">Address Information</h3>
+                </div>
+                <div class="card-body">
+                    <address class="mb-4">
+                        {{ staff.address.street_name }}<br>
+                        {{ staff.address.locality }}<br>
+                        {{ staff.address.city }}, {{ staff.address.state }}<br>
+                        PIN: {{ staff.address.pin_code }}
+                    </address>
+                    
+                    <div class="mb-3">
+                        <strong>Address Type:</strong> 
+                        <span class="badge bg-secondary">{{ staff.address.address_type }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teacher-Specific Information -->
+        {% if staff.staff_type == 'TEACHER' %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h3 class="card-title mb-0">Teaching Information</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Primary Class -->
+                    {% if staff.primary_class %}
+                    <h5>Class Teacher</h5>
+                    <div class="mb-4">
+                        <span class="badge bg-info">
+                            {{ staff.primary_class.name }}-{{ staff.primary_class.section }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Subjects Taught -->
+                    <h5>Subjects Taught</h5>
+                    {% if staff.subjects_taught %}
+                    <div class="mb-3">
+                        {% for subject in staff.subjects_taught %}
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">{{ subject.name }}</span>
+                            <small class="text-muted">
+                                ({{ subject.class_group.name }}-{{ subject.class_group.section }})
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No subjects assigned yet</p>
+                    {% endif %}
+
+                    <a href="{{ url_for('staff.staff_subjects', staff_id=staff.id) }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        Manage Subjects
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Attendance -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Recent Attendance</h3>
+                    <a href="{{ url_for('staff.staff_attendance', staff_id=staff.id) }}" 
+                       class="btn btn-light btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_attendance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in recent_attendance %}
+                                <tr>
+                                    <td>{{ record.date.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if record.status == 'PRESENT' %}bg-success
+                                            {% elif record.status == 'ABSENT' %}bg-danger
+                                            {% elif record.status == 'HALF_DAY' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ record.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.remarks or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent attendance records</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary Information -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Recent Salary Records</h3>
+                    <a href="{{ url_for('staff.staff_salary', staff_id=staff.id) }}" 
+                       class="btn btn-light btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if salary_records %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Payment Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in salary_records %}
+                                <tr>
+                                    <td>{{ record.due_date.strftime('%B %Y') }}</td>
+                                    <td>₹{{ "{:,.2f}".format(record.amount) }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if record.transaction_status == 'PAID' %}bg-success
+                                            {% elif record.transaction_status == 'PENDING' %}bg-warning
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ record.transaction_status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if record.payment_date %}
+                                            {{ record.payment_date.strftime('%d-%m-%Y') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No salary records available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Documents</h3>
+                    <a href="{{ url_for('staff.staff_documents', staff_id=staff.id) }}" 
+                       class="btn btn-light btn-sm">
+                        Manage Documents
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if staff.documents %}
+                    <div class="list-group">
+                        {% for doc in staff.documents %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ doc.document_type }}</h5>
+                                <small>{{ doc.created_at.strftime('%d-%m-%Y') }}</small>
+                            </div>
+                            <p class="mb-1">{{ doc.description or 'No description' }}</p>
+                            <small>
+                                <a href="#" onclick="viewDocument('{{ doc.file_path }}')">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No documents uploaded</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewDocument(path) {
+    window.open(`/static/${path}`, '_blank');
+}
+</script>
+{% endblock %}

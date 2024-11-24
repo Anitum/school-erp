@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Students - School Management{% endblock %}
+{% block title %}Staff - School Management{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Students</h1>
-    <a href="{{ url_for('main.add_student') }}" class="btn btn-primary">Add New Student</a>
+    <h1>Staff</h1>
+    <a href="{{ url_for('main.add_staff') }}" class="btn btn-primary">Add New Staff</a>
 </div>
 
 <div class="card">
@@ -16,26 +16,33 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
-                        <th>Class</th>
+                        <th>Type</th>
                         <th>Branch</th>
-                        <th>Date of Birth</th>
-                        <th>Blood Group</th>
+                        <th>Contact</th>
+                        <th>Qualification</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for student in students %}
+                    {% for member in staff %}
                     <tr>
-                        <td>{{ student.id }}</td>
-                        <td>{{ student.first_name }} {{ student.middle_name or '' }} {{ student.last_name }}</td>
-                        <td>{{ student.class.name }}-{{ student.class.section }}</td>
-                        <td>{{ student.branch.name }}</td>
-                        <td>{{ student.date_of_birth.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ student.blood_group or 'N/A' }}</td>
+                        <td>{{ member.id }}</td>
+                        <td>{{ member.first_name }} {{ member.middle_name or '' }} {{ member.last_name }}</td>
                         <td>
-                            <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
-                                {{ 'Active' if student.is_active else 'Inactive' }}
+                            <span class="badge {% if member.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ member.staff_type }}
+                            </span>
+                        </td>
+                        <td>{{ member.branch.name }}</td>
+                        <td>
+                            <div>{{ member.phone }}</div>
+                            <small class="text-muted">{{ member.email or 'No email' }}</small>
+                        </td>
+                        <td>{{ member.qualification or 'N/A' }}</td>
+                        <td>
+                            <span class="badge {% if member.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ 'Active' if member.is_active else 'Inactive' }}
                             </span>
                         </td>
                         <td>
