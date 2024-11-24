@@ -11,24 +11,36 @@
     {% block extra_css %}{% endblock %}
     
     <style>
+        :root {
+            --sidebar-bg: #342a40;
+            --sidebar-hover: rgba(255,255,255,0.1);
+            --active-link: #007bff;
+            --content-bg: #f8f9fa;
+        }
+
         .sidebar {
             min-height: 100vh;
-            background-color: #342a40;
+            background-color: var(--sidebar-bg);
             padding-top: 1rem;
+            position: fixed;
+            z-index: 1000;
         }
         
         .sidebar .nav-link {
             color: #fff;
             padding: 0.5rem 1rem;
             margin: 0.2rem 0;
+            transition: all 0.3s ease;
         }
         
         .sidebar .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
+            background-color: var(--sidebar-hover);
+            transform: translateX(5px);
         }
         
         .sidebar .nav-link.active {
-            background-color: #007bff;
+            background-color: var(--active-link);
+            border-radius: 4px;
         }
         
         .sidebar .nav-link i {
@@ -39,16 +51,21 @@
         
         .main-content {
             min-height: 100vh;
-            background-color: #f8f9fa;
+            background-color: var(--content-bg);
         }
         
         .navbar {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 999;
         }
         
         .dropdown-menu {
             border: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease;
         }
         
         .alert-container {
@@ -56,6 +73,39 @@
             top: 20px;
             right: 20px;
             z-index: 1050;
+        }
+
+        .alert {
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
@@ -76,7 +126,7 @@
                         </a>
                     </li>
                     
-                    <!-- Students Section -->
+                    <!-- Students -->
                     <li class="nav-item">
                         <a class="nav-link {% if 'student.' in request.endpoint %}active{% endif %}" 
                            href="{{ url_for('student.list_students') }}">
@@ -84,49 +134,74 @@
                         </a>
                     </li>
 
-                    <!-- Staff Section -->
+                    <!-- Staff -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-chalkboard-teacher"></i> Staff</a>
+                        <a class="nav-link {% if 'staff.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('staff.list_staff') }}">
+                            <i class="fas fa-chalkboard-teacher"></i> Staff
+                        </a>
                     </li>
 
-                    <!-- Classes Section -->
+                    <!-- Classes -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-school"></i> Classes</a>
+                        <a class="nav-link {% if 'class.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('class.list_classes') }}">
+                            <i class="fas fa-school"></i> Classes
+                        </a>
                     </li>
 
-                    <!-- Attendance Section -->
+                    <!-- Attendance -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-calendar-check"></i> Attendance</a>
+                        <a class="nav-link {% if 'attendance.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('attendance.dashboard') }}">
+                            <i class="fas fa-calendar-check"></i> Attendance
+                        </a>
                     </li>
 
-                    <!-- Subjects Section -->
+                    <!-- Fees -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-book"></i> Subjects</a>
+                        <a class="nav-link {% if 'fees.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('fees.list_fees') }}">
+                            <i class="fas fa-money-bill"></i> Fees
+                        </a>
                     </li>
 
-                    <!-- Finance Section -->
+                    <!-- Events -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-money-bill"></i> Finance</a>
+                        <a class="nav-link {% if 'events.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('events.list_events') }}">
+                            <i class="fas fa-calendar"></i> Events
+                        </a>
                     </li>
 
-                    <!-- Transportation Section -->
+                    <!-- Inventory -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-bus"></i> Transport</a>
+                        <a class="nav-link {% if 'inventory.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('inventory.list_inventory') }}">
+                            <i class="fas fa-boxes"></i> Inventory
+                        </a>
                     </li>
 
-                    <!-- Inventory Section -->
+                    <!-- Branches -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-boxes"></i> Inventory</a>
+                        <a class="nav-link {% if 'branch.' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('branch.list_branches') }}">
+                            <i class="fas fa-code-branch"></i> Branches
+                        </a>
                     </li>
 
-                    <!-- Reports Section -->
+                    <!-- Reports -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Reports</a>
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-chart-bar"></i> Reports
+                        </a>
                     </li>
 
-                    <!-- Settings Section -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <!-- Settings -->
+                    <li class="nav-item mt-4">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -134,7 +209,7 @@
             <!-- Main Content -->
             <div class="col-md-10 offset-md-2 main-content">
                 <!-- Top Navbar -->
-                <nav class="navbar navbar-expand-lg navbar-light bg-white">
+                <nav class="navbar navbar-expand-lg navbar-light">
                     <div class="container-fluid">
                         <!-- Search Bar -->
                         <form class="d-flex me-auto">
@@ -159,9 +234,20 @@
                                 <div class="dropdown-menu dropdown-menu-end">
                                     <h6 class="dropdown-header">Notifications</h6>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item" href="#">New student registration</a>
-                                    <a class="dropdown-item" href="#">Fee payment due</a>
-                                    <a class="dropdown-item" href="#">Staff meeting reminder</a>
+                                    <a class="dropdown-item" href="#">
+                                        <small class="text-muted">Just now</small>
+                                        <div>New student registration</div>
+                                    </a>
+                                    <a class="dropdown-item" href="#">
+                                        <small class="text-muted">30 minutes ago</small>
+                                        <div>Fee payment due</div>
+                                    </a>
+                                    <a class="dropdown-item" href="#">
+                                        <small class="text-muted">1 hour ago</small>
+                                        <div>Staff meeting reminder</div>
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item text-center small text-muted" href="#">View all notifications</a>
                                 </div>
                             </li>
 
@@ -194,9 +280,9 @@
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                                     {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                 </div>
                             {% endfor %}
                         {% endif %}
@@ -219,13 +305,40 @@
     <script>
         // Auto-hide flash messages
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-hide flash messages after 5 seconds
             setTimeout(function() {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach(alert => {
+                document.querySelectorAll('.alert').forEach(alert => {
                     const bsAlert = new bootstrap.Alert(alert);
                     bsAlert.close();
                 });
             }, 5000);
+
+            // Initialize all tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+
+            // Add active class to current nav item based on URL
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Optional: Collapse sidebar on mobile
+            if (window.innerWidth < 768) {
+                document.querySelector('.sidebar').classList.add('d-none');
+            }
+        });
+
+        // Search functionality
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchTerm = this.querySelector('input').value;
+            // Implement your search logic here
+            console.log('Searching for:', searchTerm);
         });
     </script>
 </body>
