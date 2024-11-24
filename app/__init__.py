@@ -33,8 +33,15 @@ def create_app():
     app.register_blueprint(fees_bp)
 
     
+    from app.routes.attendance import bp as attendance_bp
+    app.register_blueprint(attendance_bp)
 
 
+    from app.routes.branch import bp as branch_bp
+    app.register_blueprint(branch_bp)
+
+    from app.routes.events import bp as events_bp
+    app.register_blueprint(events_bp)
 
     # Custom Jinja Filters
     @app.template_filter('month_name')

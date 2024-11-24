@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Add New Event - School ERP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Add New Event</h1>
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Events
+        </a>
+    </div>
+
+    <!-- Event Form -->
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Basic Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="title" class="form-label">Event Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       required maxlength="100">
+                                <div class="invalid-feedback">Please provide an event title.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="date" class="form-label">Event Date *</label>
+                                <input type="date" class="form-control" id="date" name="date" 
+                                       required min="{{ today }}" value="{{ today }}">
+                                <div class="invalid-feedback">Please select a valid date.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="event_type" class="form-label">Event Type *</label>
+                                <select class="form-select" id="event_type" name="event_type" required>
+                                    <option value="">Select Type</option>
+                                    <option value="ACADEMIC">Academic</option>
+                                    <option value="CULTURAL">Cultural</option>
+                                    <option value="SPORTS">Sports</option>
+                                    <option value="EXAM">Exam</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                                <div class="invalid-feedback">Please select an event type.</div>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="venue" class="form-label">Venue</label>
+                                <input type="text" class="form-control" id="venue" name="venue" 
+                                       maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Event Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="coordinator_id" class="form-label">Event Coordinator</label>
+                                <select class="form-select" id="coordinator_id" name="coordinator_id">
+                                    <option value="">Select Coordinator</option>
+                                    {% for member in staff %}
+                                    <option value="{{ member.id }}">{{ member.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label d-block">Holiday Settings</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_holiday" 
+                                           name="is_holiday">
+                                    <label class="form-check-label" for="is_holiday">
+                                        Mark as Holiday
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Participating Classes</label>
+                            <div class="row g-3">
+                                {% for class in classes %}
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="participants" value="{{ class.id }}" 
+                                               id="class_{{ class.id }}">
+                                        <label class="form-check-label" for="class_{{ class.id }}">
+                                            {{ class.name }} - {{ class.section }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="reset" class="btn btn-light me-md-2">Reset Form</button>
+                    <button type="submit" class="btn btn-primary">Create Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Event type dependent fields
+document.getElementById('event_type').addEventListener('change', function() {
+    const examFields = document.getElementById('examFields');
+    if (this.value === 'EXAM') {
+        examFields?.classList.remove('d-none');
+    } else {
+        examFields?.classList.add('d-none');
+    }
+});
+
+// Holiday checkbox logic
+document.getElementById('is_holiday').addEventListener('change', function() {
+    const coordinator = document.getElementById('coordinator_id');
+    const participants = document.getElementsByName('participants');
+    
+    if (this.checked) {
+        coordinator.disabled = true;
+        coordinator.value = '';
+        participants.forEach(p => {
+            p.checked = false;
+            p.disabled = true;
+        });
+    } else {
+        coordinator.disabled = false;
+        participants.forEach(p => p.disabled = false);
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-label {
+    font-weight: 500;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+}
+
+/* Custom checkbox style for participating classes */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Make the form sections stand out */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+</style>
+{% endblock %}

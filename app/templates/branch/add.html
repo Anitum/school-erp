@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Add New Branch - School ERP{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">Add New Branch</h2>
+                    <a href="{{ url_for('branch.list_branches') }}" class="btn btn-secondary">
+                        Back to List
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('branch.add_branch') }}">
+                        <!-- Branch Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Branch Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Branch Name *</label>
+                                        <input type="text" 
+                                               name="name" 
+                                               class="form-control" 
+                                               required
+                                               placeholder="Enter branch name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Contact Number *</label>
+                                        <input type="tel" 
+                                               name="contact_number" 
+                                               class="form-control" 
+                                               required
+                                               placeholder="Enter contact number">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" 
+                                               name="email" 
+                                               class="form-control"
+                                               placeholder="Enter email address">
+                                        <small class="text-muted">Optional: For official communications</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Address Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Complete Address *</label>
+                                    <textarea name="address" 
+                                              class="form-control" 
+                                              rows="3" 
+                                              required
+                                              placeholder="Enter complete address"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="reset" class="btn btn-secondary me-md-2">Reset Form</button>
+                            <button type="submit" class="btn btn-primary">Create Branch</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

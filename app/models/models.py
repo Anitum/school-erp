@@ -333,6 +333,9 @@ class Attendance(db.Model):
     remarks = db.Column(db.String(255))
     marked_by = db.Column(db.Integer, db.ForeignKey('staff.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    arrival_time = db.Column(db.Time)  # Actual arrival time
+    expected_arrival_time = db.Column(db.Time)  # Expected arrival time
 
     __table_args__ = (
         db.UniqueConstraint('entity_type', 'entity_id', 'date', name='unique_daily_attendance'),
@@ -475,3 +478,33 @@ class AuditLog(db.Model):
 
     def __repr__(self):
         return f'<AuditLog {self.action} {self.entity_type}-{self.entity_id}>'
+
+
+class SchoolEvent(db.Model, TimestampMixin):
+    """School event model for tracking holidays, functions, etc."""
+    __tablename__ = 'school_event'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    date = db.Column(db.Date, nullable=False)
+    event_type = db.Column(db.Enum('ACADEMIC', 'CULTURAL', 'SPORTS', 'EXAM', 'OTHER', 
+                                 name='event_types'), nullable=False)
+    venue = db.Column(db.String(100))
+    coordinator_id = db.Column(db.Integer, db.ForeignKey('staff.id'))
+    is_holiday = db.Column(db.Boolean, default=False)
+    participants = db.Column(db.String(255))  # Store as comma-separated class IDs
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    coordinator = db.relationship('Staff', backref='coordinated_events')
+
+    def __repr__(self):
+        return f'<Event {self.title} on {self.date}>'
+
+    @property
+    def participating_classes(self):
+        """Get list of participating class IDs"""
+        if not self.participants:
+            return []
+        return [int(id) for id in self.participants.split(',')]

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Student Attendance - School ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Student Attendance</h1>
+            <p class="text-muted">{{ selected_date.strftime('%A, %d %B %Y') }}</p>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" onclick="markAllPresent()">
+                Mark All Present
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkAttendanceModal">
+                Bulk Update
+            </button>
+            <a href="{{ url_for('attendance.dashboard') }}" class="btn btn-secondary">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Class</label>
+                    <select name="class_id" class="form-select">
+                        <option value="">All Classes</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if selected_class == class.id %}selected{% endif %}>
+                            {{ class.name }}-{{ class.section }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" 
+                           value="{{ selected_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if students %}
+            <form id="attendanceForm" method="post" action="{{ url_for('attendance.mark_student_attendance') }}">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Status</th>
+                                <th style="width: 150px;">Arrival Time</th>
+                                <th>Remarks</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            {% set attendance = attendance_records.get(student.id) %}
+                            <tr class="{% if attendance and attendance.arrival_time and attendance.arrival_time > attendance.expected_arrival_time %}table-warning{% endif %}">
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <div>{{ student.full_name }}</div>
+                                    {% if student.parents %}
+                                    <small class="text-muted">
+                                        Contact: {{ student.parents[0].phone_primary }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ student.class_group.name }}-{{ student.class_group.section }}</td>
+                                <td>
+                                    <select name="status_{{ student.id }}" class="form-select form-select-sm" 
+                                            onchange="updateAttendance({{ student.id }})">
+                                        <option value="PRESENT" {% if attendance and attendance.status == 'PRESENT' %}selected{% endif %}>
+                                            Present
+                                        </option>
+                                        <option value="ABSENT" {% if attendance and attendance.status == 'ABSENT' %}selected{% endif %}>
+                                            Absent
+                                        </option>
+                                        <option value="HALF_DAY" {% if attendance and attendance.status == 'HALF_DAY' %}selected{% endif %}>
+                                            Half Day
+                                        </option>
+                                        <option value="LEAVE" {% if attendance and attendance.status == 'LEAVE' %}selected{% endif %}>
+                                            Leave
+                                        </option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="time" name="arrival_{{ student.id }}" class="form-control form-control-sm"
+                                           value="{{ attendance.arrival_time.strftime('%H:%M') if attendance and attendance.arrival_time else '' }}"
+                                           onchange="updateAttendance({{ student.id }})">
+                                </td>
+                                <td>
+                                    <input type="text" name="remarks_{{ student.id }}" class="form-control form-control-sm"
+                                           value="{{ attendance.remarks if attendance else '' }}"
+                                           placeholder="Add remarks..."
+                                           onchange="updateAttendance({{ student.id }})">
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('attendance.student_history', student_id=student.id) }}" 
+                                           class="btn btn-outline-info" title="View History">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                        {% if student.parents %}
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="notifyParent({{ student.id }})" title="Notify Parent">
+                                            <i class="fas fa-bell"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            {% else %}
+            <div class="text-center py-4">
+                <h4 class="text-muted">No students found</h4>
+                <p>Try adjusting your filters or select a different date.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Attendance Modal -->
+<div class="modal fade" id="bulkAttendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Update Attendance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkAttendanceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="bulk_status">
+                            <option value="PRESENT">Present</option>
+                            <option value="ABSENT">Absent</option>
+                            <option value="HALF_DAY">Half Day</option>
+                            <option value="LEAVE">Leave</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Arrival Time</label>
+                        <input type="time" name="bulk_arrival" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Remarks</label>
+                        <input type="text" name="bulk_remarks" class="form-control" 
+                               placeholder="Add remarks for all selected students...">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="notifyParents">
+                            <label class="form-check-label" for="notifyParents">
+                                Notify parents of absent students
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="applyBulkUpdate()">
+                    Update Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pendingUpdates = new Set();
+
+function updateAttendance(studentId) {
+    pendingUpdates.add(studentId);
+    // Auto-save after 2 seconds of no changes
+    setTimeout(() => {
+        if (pendingUpdates.has(studentId)) {
+            saveAttendance(studentId);
+        }
+    }, 2000);
+}
+
+function saveAttendance(studentId) {
+    const form = document.getElementById('attendanceForm');
+    const formData = new FormData(form);
+    formData.append('student_id', studentId);
+    formData.append('date', '{{ selected_date.strftime("%Y-%m-%d") }}');
+
+    fetch('{{ url_for("attendance.mark_student_attendance") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            pendingUpdates.delete(studentId);
+            // Show success indicator
+            const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
+            row.classList.add('table-success');
+            setTimeout(() => row.classList.remove('table-success'), 1000);
+        } else {
+            alert('Error saving attendance: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving attendance');
+    });
+}
+
+function markAllPresent() {
+    if (confirm('Mark all displayed students as present?')) {
+        document.querySelectorAll('select[name^="status_"]').forEach(select => {
+            select.value = 'PRESENT';
+            updateAttendance(select.name.split('_')[1]);
+        });
+    }
+}
+
+function applyBulkUpdate() {
+    const form = document.getElementById('bulkAttendanceForm');
+    const formData = new FormData(form);
+    
+    // Add logic to update selected students
+    document.querySelectorAll('input[name^="student_"]:checked').forEach(checkbox => {
+        const studentId = checkbox.value;
+        updateAttendance(studentId);
+    });
+    
+    $('#bulkAttendanceModal').modal('hide');
+}
+
+function notifyParent(studentId) {
+    // Add logic to send notification to parent
+    alert('Notification sent to parent');
+}
+</script>
+{% endblock %}

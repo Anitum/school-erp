@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Branch Details - {{ branch.name }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">{{ branch.name }}</h1>
+            <div class="text-muted">Branch ID: {{ branch.id }}</div>
+        </div>
+        
+        <div class="btn-group">
+            <a href="{{ url_for('branch.edit_branch', branch_id=branch.id) }}" 
+               class="btn btn-warning">Edit Branch</a>
+            <a href="{{ url_for('branch.list_branches') }}" 
+               class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-primary mb-2">Total Students</h6>
+                    <h2 class="mb-0">{{ stats.total_students }}</h2>
+                    <small class="text-muted">Active students</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-success mb-2">Total Staff</h6>
+                    <h2 class="mb-0">{{ stats.total_staff }}</h2>
+                    <small class="text-muted">Active staff members</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-info mb-2">Teachers</h6>
+                    <h2 class="mb-0">{{ stats.teachers }}</h2>
+                    <small class="text-muted">Teaching staff</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-warning mb-2">Active Classes</h6>
+                    <h2 class="mb-0">{{ stats.active_classes }}</h2>
+                    <small class="text-muted">Current academic year</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch Details -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Branch Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted d-block">Status</label>
+                        <span class="badge {% if branch.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ 'Active' if branch.is_active else 'Inactive' }}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted d-block">Contact Number</label>
+                        {{ branch.contact_number }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted d-block">Email Address</label>
+                        {{ branch.email or 'Not provided' }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="text-muted d-block">Address</label>
+                        {{ branch.address }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{{ url_for('branch.branch_students', branch_id=branch.id) }}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            Students
+                            <span class="badge bg-primary">{{ stats.total_students }}</span>
+                        </a>
+                        <a href="{{ url_for('branch.branch_staff', branch_id=branch.id) }}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            Staff
+                            <span class="badge bg-success">{{ stats.total_staff }}</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

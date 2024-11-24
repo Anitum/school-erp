@@ -43,7 +43,7 @@
             <div class="card-body">
                 <h5 class="card-title">Total Branches</h5>
                 <p class="card-text display-4">{{ stats.total_branches }}</p>
-                <a href="{{ url_for('main.list_branches') }}" class="btn btn-light">View Branches</a>
+                <a href="{{ url_for('branch.list_branches') }}" class="btn btn-light">View Branches</a>
             </div>
         </div>
     </div>
@@ -53,10 +53,10 @@
     <div class="col-12">
         <h2>Quick Actions</h2>
         <div class="btn-group">
-            <a href="{{ url_for('main.add_student') }}" class="btn btn-primary">Add Student</a>
-            <a href="{{ url_for('main.add_staff') }}" class="btn btn-success">Add Staff</a>
-            <a href="{{ url_for('main.add_class') }}" class="btn btn-info">Add Class</a>
-            <a href="{{ url_for('main.add_branch') }}" class="btn btn-warning">Add Branch</a>
+            <a href="{{ url_for('student.add_student') }}" class="btn btn-primary">Add Student</a>
+            <a href="{{ url_for('staff.add_staff') }}" class="btn btn-success">Add Staff</a>
+            <a href="{{ url_for('class.add_class') }}" class="btn btn-info">Add Class</a>
+            <a href="{{ url_for('branch.add_branch') }}" class="btn btn-warning">Add Branch</a>
         </div>
     </div>
 </div>

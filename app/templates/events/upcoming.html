@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Upcoming Events - School Calendar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Upcoming Events</h1>
+            <div class="text-muted">Next 30 days</div>
+        </div>
+        
+        <div class="btn-group">
+            <a href="{{ url_for('events.add_event') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Event
+            </a>
+            <a href="{{ url_for('events.calendar_view') }}" class="btn btn-outline-primary">
+                <i class="bi bi-calendar3"></i> Calendar View
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Timeline -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="timeline">
+                        {% set current_date = none %}
+                        {% for event in events %}
+                            {% if event.date != current_date %}
+                                {% set current_date = event.date %}
+                                <div class="timeline-date">
+                                    <span class="badge bg-light text-dark">
+                                        {{ event.date|date }}
+                                        {% if event.date == today %}
+                                            <span class="badge bg-primary">Today</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% endif %}
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker {{ event.event_type|lower }}"></div>
+                                <div class="timeline-content">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="card-title mb-0">{{ event.title }}</h5>
+                                                <span class="badge bg-{{ event.event_type|lower }}">
+                                                    {{ event.event_type|title }}
+                                                </span>
+                                            </div>
+                                            
+                                            {% if event.description %}
+                                            <p class="card-text text-muted mt-2">{{ event.description }}</p>
+                                            {% endif %}
+                                            
+                                            <div class="event-details mt-2">
+                                                {% if event.venue %}
+                                                <div class="small">
+                                                    <i class="bi bi-geo-alt"></i> {{ event.venue }}
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {% if event.coordinator %}
+                                                <div class="small">
+                                                    <i class="bi bi-person"></i> {{ event.coordinator.full_name }}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if event.participating_classes %}
+                                                <div class="small">
+                                                    <i class="bi bi-people"></i> 
+                                                    Classes: 
+                                                    {% for class_id in event.participating_classes %}
+                                                        {{ class_map[class_id] }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="mt-3 text-end">
+                                                <a href="{{ url_for('events.edit_event', event_id=event.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil"></i> Edit
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-calendar-x display-1"></i>
+                                <h4 class="mt-3">No Upcoming Events</h4>
+                                <p>There are no events scheduled for the next 30 days.</p>
+                                <a href="{{ url_for('events.add_event') }}" class="btn btn-primary">
+                                    Add New Event
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Stats</h5>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 border rounded text-center">
+                                <div class="h3 mb-0">{{ events|length }}</div>
+                                <div class="small text-muted">Upcoming Events</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded text-center">
+                                <div class="h3 mb-0">{{ holidays|length }}</div>
+                                <div class="small text-muted">Holidays</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Holidays -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Upcoming Holidays</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for holiday in holidays %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ holiday.name }}</h6>
+                                <small class="text-muted">{{ holiday.date|date }}</small>
+                            </div>
+                            {% set days_until = (holiday.date - today).days %}
+                            <small class="text-muted">
+                                {% if days_until == 0 %}
+                                    Today
+                                {% elif days_until == 1 %}
+                                    Tomorrow
+                                {% else %}
+                                    In {{ days_until }} days
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-center text-muted py-4">
+                            <i class="bi bi-calendar-x mb-2"></i>
+                            <div>No upcoming holidays</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Type Distribution -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Event Distribution</h5>
+                </div>
+                <div class="card-body">
+                    {% for type in ['ACADEMIC', 'CULTURAL', 'SPORTS', 'EXAM', 'OTHER'] %}
+                    {% set count = events|selectattr('event_type', 'equalto', type)|list|length %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>{{ type|title }}</span>
+                            <span>{{ count }}</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-{{ type|lower }}" 
+                                 style="width: {{ (count / events|length * 100)|round|int if events|length > 0 else 0 }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-date {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    z-index: 2;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    height: 100%;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+    margin-left: 50px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 15px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px;
+}
+
+.timeline-marker.academic { color: #0d6efd; }
+.timeline-marker.cultural { color: #198754; }
+.timeline-marker.sports { color: #ffc107; }
+.timeline-marker.exam { color: #dc3545; }
+.timeline-marker.other { color: #6c757d; }
+
+.timeline-content {
+    margin-left: 15px;
+}
+
+.event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Progress bar colors */
+.progress-bar.bg-academic { background-color: #0d6efd !important; }
+.progress-bar.bg-cultural { background-color: #198754 !important; }
+.progress-bar.bg-sports { background-color: #ffc107 !important; }
+.progress-bar.bg-exam { background-color: #dc3545 !important; }
+.progress-bar.bg-other { background-color: #6c757d !important; }
+
+@media (max-width: 768px) {
+    .timeline-item {
+        margin-left: 40px;
+    }
+    
+    .timeline::before {
+        left: 19px;
+    }
+    
+    .timeline-marker {
+        left: -30px;
+        width: 12px;
+        height: 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+</script>
+{% endblock %}

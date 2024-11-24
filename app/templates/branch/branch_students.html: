@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Branch Students - {{ branch.name }}{% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Branch Students</h1>
+            <div class="text-muted">{{ branch.name }}</div>
+        </div>
+
+        <div class="btn-group">
+            <a href="{{ url_for('student.add_student') }}" class="btn btn-primary">Add Student</a>
+            <a href="{{ url_for('branch.view_branch', branch_id=branch.id) }}" 
+               class="btn btn-secondary">Back to Branch</a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Class</label>
+                    <select name="class_id" class="form-select">
+                        <option value="">All Classes</option>
+                        {% for class in branch.students|map(attribute='class_group')|unique %}
+                            <option value="{{ class.id }}" 
+                                    {% if request.args.get('class_id')|int == class.id %}selected{% endif %}>
+                                {{ class.name }}-{{ class.section }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="col-md-5 mb-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" 
+                           name="search" 
+                           class="form-control" 
+                           placeholder="Search by name..."
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students List -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student Name</th>
+                            <th>Class</th>
+                            <th>Parent Contact</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.id }}</td>
+                            <td>
+                                <div>{{ student.full_name }}</div>
+                                <small class="text-muted">DOB: {{ student.date_of_birth|date }}</small>
+                            </td>
+                            <td>{{ student.class_group.name }}-{{ student.class_group.section }}</td>
+                            <td>
+                                {% if student.parents %}
+                                    {% for parent in student.parents[:1] %}
+                                        <div>{{ parent.phone_primary }}</div>
+                                        <small class="text-muted">{{ parent.relationship }}</small>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">No contacts</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if student.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('student.view_student', student_id=student.id) }}" 
+                                       class="btn btn-info" title="View">
+                                        View
+                                    </a>
+                                    <a href="{{ url_for('student.edit_student', student_id=student.id) }}" 
+                                       class="btn btn-warning" title="Edit">
+                                        Edit
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted">No students found in this branch.</div>
+                                <a href="{{ url_for('student.add_student') }}" class="btn btn-primary mt-2">
+                                    Add New Student
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

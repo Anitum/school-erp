@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Staff Attendance - School ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Staff Attendance</h1>
+            <p class="text-muted">{{ selected_date.strftime('%A, %d %B %Y') }}</p>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" onclick="markAllPresent()">
+                Mark All Present
+            </button>
+            <a href="{{ url_for('attendance.dashboard') }}" class="btn btn-secondary">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" class="form-control" 
+                           value="{{ selected_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Staff Type</label>
+                    <select name="staff_type" class="form-select">
+                        <option value="">All Staff</option>
+                        <option value="TEACHER">Teachers</option>
+                        <option value="EMPLOYEE">Other Employees</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-success">Present</h6>
+                    <h3 class="mb-0">
+                        {{ present_count }}/{{ staff_members|length }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-danger">Absent</h6>
+                    <h3 class="mb-0">
+                        {{ absent_count }}/{{ staff_members|length }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-warning">Late Arrivals</h6>
+                    <h3 class="mb-0">{{ late_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10">
+                <div class="card-body">
+                    <h6 class="text-info">On Leave</h6>
+                    <h3 class="mb-0">{{ leave_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if staff_members %}
+            <form id="staffAttendanceForm" method="post" action="{{ url_for('attendance.mark_staff_attendance') }}">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Staff Name</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th style="width: 150px;">Arrival Time</th>
+                                <th>Expected Time</th>
+                                <th>Remarks</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in staff_members %}
+                            {% set attendance = attendance_records.get(staff.id) %}
+                            <tr class="{% if attendance and attendance.arrival_time and attendance.arrival_time > attendance.expected_arrival_time %}table-warning{% endif %}">
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <div>{{ staff.full_name }}</div>
+                                    <small class="text-muted">{{ staff.phone }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if staff.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
+                                        {{ staff.staff_type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <select name="status_{{ staff.id }}" class="form-select form-select-sm" 
+                                            onchange="updateAttendance({{ staff.id }})">
+                                        <option value="PRESENT" {% if attendance and attendance.status == 'PRESENT' %}selected{% endif %}>
+                                            Present
+                                        </option>
+                                        <option value="ABSENT" {% if attendance and attendance.status == 'ABSENT' %}selected{% endif %}>
+                                            Absent
+                                        </option>
+                                        <option value="HALF_DAY" {% if attendance and attendance.status == 'HALF_DAY' %}selected{% endif %}>
+                                            Half Day
+                                        </option>
+                                        <option value="LEAVE" {% if attendance and attendance.status == 'LEAVE' %}selected{% endif %}>
+                                            Leave
+                                        </option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="time" name="arrival_{{ staff.id }}" class="form-control form-control-sm"
+                                           value="{{ attendance.arrival_time.strftime('%H:%M') if attendance and attendance.arrival_time else '' }}"
+                                           onchange="updateAttendance({{ staff.id }})">
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        {{ attendance.expected_arrival_time.strftime('%H:%M') if attendance and attendance.expected_arrival_time else '09:00' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <input type="text" name="remarks_{{ staff.id }}" class="form-control form-control-sm"
+                                           value="{{ attendance.remarks if attendance else '' }}"
+                                           placeholder="Add remarks..."
+                                           onchange="updateAttendance({{ staff.id }})">
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('attendance.staff_history', staff_id=staff.id) }}" 
+                                           class="btn btn-outline-info" title="View History">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            {% else %}
+            <div class="text-center py-4">
+                <h4 class="text-muted">No staff members found</h4>
+                <p>Try adjusting your filters or select a different date.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Late Arrival Confirmation Modal -->
+<div class="modal fade" id="lateArrivalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Late Arrival</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>The arrival time is later than expected. Please provide a reason:</p>
+                <input type="text" id="lateArrivalReason" class="form-control" 
+                       placeholder="Reason for late arrival">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmLateArrival()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pendingUpdates = new Set();
+let currentLateStaffId = null;
+
+function updateAttendance(staffId) {
+    const arrivalInput = document.querySelector(`input[name="arrival_${staffId}"]`);
+    const expectedTime = '09:00'; // This should come from server/config
+    
+    if (arrivalInput.value) {
+        const arrival = new Date(`2000-01-01T${arrivalInput.value}`);
+        const expected = new Date(`2000-01-01T${expectedTime}`);
+        
+        if (arrival > expected) {
+            currentLateStaffId = staffId;
+            $('#lateArrivalModal').modal('show');
+            return;
+        }
+    }
+    
+    saveAttendance(staffId);
+}
+
+function saveAttendance(staffId) {
+    pendingUpdates.add(staffId);
+    
+    // Auto-save after 2 seconds of no changes
+    setTimeout(() => {
+        if (pendingUpdates.has(staffId)) {
+            const form = document.getElementById('staffAttendanceForm');
+            const formData = new FormData(form);
+            formData.append('staff_id', staffId);
+            formData.append('date', '{{ selected_date.strftime("%Y-%m-%d") }}');
+
+            fetch('{{ url_for("attendance.mark_staff_attendance") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    pendingUpdates.delete(staffId);
+                    // Show success indicator
+                    const row = document.querySelector(`tr[data-staff-id="${staffId}"]`);
+                    row.classList.add('table-success');
+                    setTimeout(() => row.classList.remove('table-success'), 1000);
+                } else {
+                    alert('Error saving attendance: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving attendance');
+            });
+        }
+    }, 2000);
+}
+
+function confirmLateArrival() {
+    if (currentLateStaffId) {
+        const reason = document.getElementById('lateArrivalReason').value;
+        document.querySelector(`input[name="remarks_${currentLateStaffId}"]`).value = 
+            `Late Arrival: ${reason}`;
+        
+        $('#lateArrivalModal').modal('hide');
+        saveAttendance(currentLateStaffId);
+        currentLateStaffId = null;
+    }
+}
+
+function markAllPresent() {
+    if (confirm('Mark all displayed staff members as present?')) {
+        document.querySelectorAll('select[name^="status_"]').forEach(select => {
+            select.value = 'PRESENT';
+            const staffId = select.name.split('_')[1];
+            updateAttendance(staffId);
+        });
+    }
+}
+</script>
+{% endblock %}

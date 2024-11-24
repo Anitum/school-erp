@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Branch Staff - {{ branch.name }}{% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Branch Staff</h1>
+            <div class="text-muted">{{ branch.name }}</div>
+        </div>
+
+        <div class="btn-group">
+            <a href="{{ url_for('staff.add_staff') }}" class="btn btn-primary">Add Staff</a>
+            <a href="{{ url_for('branch.view_branch', branch_id=branch.id) }}" 
+               class="btn btn-secondary">Back to Branch</a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row align-items-end">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Staff Type</label>
+                    <select name="staff_type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="TEACHER" {% if request.args.get('staff_type') == 'TEACHER' %}selected{% endif %}>Teacher</option>
+                        <option value="EMPLOYEE" {% if request.args.get('staff_type') == 'EMPLOYEE' %}selected{% endif %}>Employee</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+
+                <div class="col-md-5 mb-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" 
+                           name="search" 
+                           class="form-control" 
+                           placeholder="Search by name..."
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Staff List -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Staff Name</th>
+                            <th>Role</th>
+                            <th>Contact</th>
+                            <th>Experience</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in staff %}
+                        <tr>
+                            <td>{{ member.id }}</td>
+                            <td>
+                                <div>{{ member.full_name }}</div>
+                                <small class="text-muted">Since: {{ member.joining_date|date }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if member.staff_type == 'TEACHER' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ member.staff_type }}
+                                </span>
+                            </td>
+                            <td>
+                                <div>{{ member.phone }}</div>
+                                {% if member.email %}
+                                    <small class="text-muted">{{ member.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ member.experience_years or 0 }} years<br>
+                                <small class="text-muted">{{ member.qualification or 'Not specified' }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if member.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ 'Active' if member.is_active else 'Inactive' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('staff.view_staff', staff_id=member.id) }}" 
+                                       class="btn btn-info" title="View">
+                                        View
+                                    </a>
+                                    <a href="{{ url_for('staff.edit_staff', staff_id=member.id) }}" 
+                                       class="btn btn-warning" title="Edit">
+                                        Edit
+                                    </a>
+                                    {% if member.staff_type == 'TEACHER' %}
+                                    <a href="{{ url_for('staff.staff_subjects', staff_id=member.id) }}" 
+                                       class="btn btn-primary" title="Subjects">
+                                        Subjects
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">No staff members found in this branch.</div>
+                                <a href="{{ url_for('staff.add_staff') }}" class="btn btn-primary mt-2">
+                                    Add New Staff
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

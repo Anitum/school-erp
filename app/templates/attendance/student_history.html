@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% block title %}Attendance History - {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Attendance History</h1>
+            <p class="text-muted">
+                {{ student.full_name }} | 
+                Class: {{ student.class_group.name }}-{{ student.class_group.section }} | 
+                ID: {{ student.id }}
+            </p>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" onclick="exportHistory()">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+            {% if student.parents %}
+            <button type="button" class="btn btn-primary" onclick="sendReport()">
+                <i class="fas fa-envelope me-2"></i>Send to Parent
+            </button>
+            {% endif %}
+            <a href="{{ url_for('attendance.student_attendance') }}" class="btn btn-secondary">
+                Back to Attendance
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <!-- Attendance Rate Card -->
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-primary card-subtitle mb-2">Attendance Rate</h6>
+                    {% set present_days = attendance_records|selectattr('status', 'eq', 'PRESENT')|list|length %}
+                    {% set total_days = attendance_records|length %}
+                    {% set percentage = (present_days / total_days * 100)|round|int if total_days > 0 else 0 %}
+                    <h3 class="card-title mb-0">{{ percentage }}%</h3>
+                    <div class="mt-2">
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar {% if percentage >= 90 %}bg-success
+                                                  {% elif percentage >= 75 %}bg-primary
+                                                  {% elif percentage >= 60 %}bg-warning
+                                                  {% else %}bg-danger{% endif %}" 
+                                 style="width: {{ percentage }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ present_days }}/{{ total_days }} days present</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Late Arrivals Card -->
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-warning card-subtitle mb-2">Late Arrivals</h6>
+                    {% set late_count = attendance_records|selectattr('arrival_time')|selectattr('arrival_time', 'gt', 'expected_arrival_time')|list|length %}
+                    <h3 class="card-title mb-0">{{ late_count }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            {{ (late_count / total_days * 100)|round|int if total_days > 0 else 0 }}% of school days
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Absences Card -->
+        <div class="col-md-3">
+            <div class="card bg-danger bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-danger card-subtitle mb-2">Absences</h6>
+                    {% set absent_days = attendance_records|selectattr('status', 'eq', 'ABSENT')|list|length %}
+                    <h3 class="card-title mb-0">{{ absent_days }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            {{ (absent_days / total_days * 100)|round|int if total_days > 0 else 0 }}% of school days
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Days Card -->
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-info card-subtitle mb-2">Leave Days</h6>
+                    {% set leave_days = attendance_records|selectattr('status', 'eq', 'LEAVE')|list|length %}
+                    <h3 class="card-title mb-0">{{ leave_days }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">Approved leaves this term</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Calendar View -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Monthly Overview</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previousMonth()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            {{ month|month_name }} {{ year }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="nextMonth()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="attendance-calendar">
+                        <!-- Calendar Headers -->
+                        <div class="row text-center mb-2">
+                            {% for day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+                            <div class="col"><small class="text-muted">{{ day }}</small></div>
+                            {% endfor %}
+                        </div>
+                        <!-- Calendar Days -->
+                        {% for week in calendar_weeks %}
+                        <div class="row g-1">
+                            {% for day in week %}
+                            <div class="col">
+                                <div class="attendance-day p-2 border rounded {% if day.date == today %}bg-light{% endif %}">
+                                    <small class="text-muted d-block">{{ day.date.day }}</small>
+                                    {% if day.attendance %}
+                                    <div class="mt-1">
+                                        <span class="badge {% if day.attendance.status == 'PRESENT' %}bg-success
+                                                         {% elif day.attendance.status == 'ABSENT' %}bg-danger
+                                                         {% elif day.attendance.status == 'LEAVE' %}bg-info
+                                                         {% else %}bg-warning{% endif %}"
+                                              data-bs-toggle="tooltip" 
+                                              title="{{ day.attendance.remarks if day.attendance.remarks else day.attendance.status }}">
+                                            {{ day.attendance.status[0] }}
+                                        </span>
+                                        {% if day.attendance.arrival_time %}
+                                        <small class="d-block text-muted">
+                                            {{ day.attendance.arrival_time.strftime('%H:%M') }}
+                                            {% if day.attendance.arrival_time > day.attendance.expected_arrival_time %}
+                                            <i class="fas fa-clock text-warning" title="Late Arrival"></i>
+                                            {% endif %}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Legend -->
+                        <div class="mt-3 d-flex justify-content-center gap-3">
+                            <small class="text-muted">
+                                <span class="badge bg-success">P</span> Present
+                            </small>
+                            <small class="text-muted">
+                                <span class="badge bg-danger">A</span> Absent
+                            </small>
+                            <small class="text-muted">
+                                <span class="badge bg-warning">H</span> Half Day
+                            </small>
+                            <small class="text-muted">
+                                <span class="badge bg-info">L</span> Leave
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Records -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Daily Records</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for record in attendance_records %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ record.date.strftime('%d %b, %Y') }}</h6>
+                                    {% if record.arrival_time %}
+                                    <small class="text-muted">
+                                        Arrived: {{ record.arrival_time.strftime('%H:%M') }}
+                                        {% if record.arrival_time > record.expected_arrival_time %}
+                                        <span class="text-warning">(Late)</span>
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <span class="badge {% if record.status == 'PRESENT' %}bg-success
+                                               {% elif record.status == 'ABSENT' %}bg-danger
+                                               {% elif record.status == 'LEAVE' %}bg-info
+                                               {% else %}bg-warning{% endif %}">
+                                    {{ record.status }}
+                                </span>
+                            </div>
+                            {% if record.remarks %}
+                            <small class="text-muted d-block mt-1">{{ record.remarks }}</small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-0">No attendance records found</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Report Modal -->
+<div class="modal fade" id="sendReportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Attendance Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if student.parents %}
+                <form id="sendReportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Select Parent</label>
+                        {% for parent in student.parents %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" 
+                                   name="parent_id" value="{{ parent.id }}" checked>
+                            <label class="form-check-label">
+                                {{ parent.relationship }}: {{ parent.full_name }}
+                                <small class="text-muted d-block">
+                                    {{ parent.email if parent.email else 'No email available' }}
+                                </small>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Include Period</label>
+                        <select class="form-select" name="period">
+                            <option value="month">Current Month</option>
+                            <option value="term">Current Term</option>
+                            <option value="year">Academic Year</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="include_details" checked>
+                            <label class="form-check-label">Include daily details</label>
+                        </div>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    No parent contact information available
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitReport()" 
+                        {% if not student.parents %}disabled{% endif %}>
+                    Send Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enable tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+function exportHistory() {
+    window.location.href = "{{ url_for('attendance.export_student_history', student_id=student.id) }}";
+}
+
+function previousMonth() {
+    const currentMonth = {{ month }};
+    const currentYear = {{ year }};
+    let newMonth = currentMonth - 1;
+    let newYear = currentYear;
+    
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear -= 1;
+    }
+    
+    window.location.href = `{{ url_for('attendance.student_history', student_id=student.id) }}?month=${newMonth}&year=${newYear}`;
+}
+
+function nextMonth() {
+    const currentMonth = {{ month }};
+    const currentYear = {{ year }};
+    let newMonth = currentMonth + 1;
+    let newYear = currentYear;
+    
+    if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
+    }
+    
+    window.location.href = `{{ url_for('attendance.student_history', student_id=student.id) }}?month=${newMonth}&year=${newYear}`;
+}
+
+function sendReport() {
+    $('#sendReportModal').modal('show');
+}
+
+function submitReport() {
+    const form = document.getElementById('sendReportForm');
+    const formData = new FormData(form);
+    // Show loading state
+    const submitBtn = document.querySelector('[onclick="submitReport()"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+    // Send to server
+    fetch("{{ url_for('attendance.send_attendance_report', student_id=student.id) }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <strong>Success!</strong> Report sent successfully to selected parents.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container-fluid').insertBefore(successAlert, document.querySelector('.row'));
+            
+            // Close modal
+            $('#sendReportModal').modal('hide');
+        } else {
+            throw new Error(data.error || 'Failed to send report');
+        }
+    })
+    .catch(error => {
+        // Show error message in modal
+        const errorAlert = document.createElement('div');
+        errorAlert.className = 'alert alert-danger mb-3';
+        errorAlert.textContent = error.message;
+        form.insertBefore(errorAlert, form.firstChild);
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Send Report';
+    });
+}
+
+// Add styles for attendance calendar
+document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .attendance-calendar .attendance-day {
+            aspect-ratio: 1;
+            min-height: 80px;
+        }
+        
+        .attendance-day .badge {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .attendance-day.today {
+            border: 2px solid var(--bs-primary) !important;
+        }
+        
+        @media (max-width: 768px) {
+            .attendance-calendar .attendance-day {
+                min-height: 60px;
+                font-size: 0.875rem;
+            }
+            
+            .attendance-day .badge {
+                width: 20px;
+                height: 20px;
+                font-size: 11px;
+            }
+        }
+    </style>
+`);
+</script>
+{% endblock %}

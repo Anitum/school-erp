@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Attendance History - {{ staff.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">Attendance History</h1>
+            <p class="text-muted">
+                {{ staff.full_name }} | {{ staff.staff_type }} |
+                ID: {{ staff.id }}
+            </p>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" onclick="exportHistory()">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+            <a href="{{ url_for('attendance.staff_attendance') }}" class="btn btn-secondary">
+                Back to Staff List
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Card Row -->
+    <div class="row mb-4">
+        <!-- Monthly Attendance Card -->
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-primary card-subtitle mb-2">Monthly Attendance</h6>
+                    {% set present_days = attendance_records|selectattr('status', 'eq', 'PRESENT')|list|length %}
+                    {% set total_days = attendance_records|length %}
+                    {% set percentage = (present_days / total_days * 100)|round|int if total_days > 0 else 0 %}
+                    <h3 class="card-title mb-0">{{ percentage }}%</h3>
+                    <div class="mt-2">
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-primary" style="width: {{ percentage }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ present_days }}/{{ total_days }} days present</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Late Arrivals Card -->
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-warning card-subtitle mb-2">Late Arrivals</h6>
+                    {% set late_count = attendance_records|selectattr('arrival_time')|selectattr('arrival_time', 'gt', 'expected_arrival_time')|list|length %}
+                    <h3 class="card-title mb-0">{{ late_count }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            {{ (late_count / total_days * 100)|round|int if total_days > 0 else 0 }}% of total days
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Days Card -->
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-info card-subtitle mb-2">Leave Days</h6>
+                    {% set leave_count = attendance_records|selectattr('status', 'eq', 'LEAVE')|list|length %}
+                    <h3 class="card-title mb-0">{{ leave_count }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            {{ (leave_count / total_days * 100)|round|int if total_days > 0 else 0 }}% of total days
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Arrival Time Card -->
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10 h-100">
+                <div class="card-body">
+                    <h6 class="text-success card-subtitle mb-2">Avg. Arrival Time</h6>
+                    <h3 class="card-title mb-0">{{ avg_arrival_time }}</h3>
+                    <div class="mt-2">
+                        <small class="text-muted">Expected: 09:00</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Calendar View -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Monthly Calendar</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="previousMonth()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary">
+                            {{ month|month_name }} {{ year }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="nextMonth()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="attendance-calendar">
+                        <div class="row text-center mb-2">
+                            {% for day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+                            <div class="col"><small class="text-muted">{{ day }}</small></div>
+                            {% endfor %}
+                        </div>
+                        {% for week in calendar_weeks %}
+                        <div class="row g-1">
+                            {% for day in week %}
+                            <div class="col">
+                                <div class="attendance-day p-2 border rounded {% if day.date == today %}bg-light{% endif %}">
+                                    <small class="text-muted d-block">{{ day.date.day }}</small>
+                                    {% if day.attendance %}
+                                    <div class="mt-1">
+                                        <span class="badge {% if day.attendance.status == 'PRESENT' %}bg-success
+                                                         {% elif day.attendance.status == 'ABSENT' %}bg-danger
+                                                         {% elif day.attendance.status == 'LEAVE' %}bg-info
+                                                         {% else %}bg-warning{% endif %}">
+                                            {{ day.attendance.status[0] }}
+                                        </span>
+                                        {% if day.attendance.arrival_time %}
+                                        <small class="d-block text-muted">
+                                            {{ day.attendance.arrival_time.strftime('%H:%M') }}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance List -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Daily Records</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for record in attendance_records %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ record.date.strftime('%d %b, %Y') }}</h6>
+                                    {% if record.arrival_time %}
+                                    <small class="text-muted">
+                                        Arrived: {{ record.arrival_time.strftime('%H:%M') }}
+                                        {% if record.arrival_time > record.expected_arrival_time %}
+                                        <span class="text-warning">(Late)</span>
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <span class="badge {% if record.status == 'PRESENT' %}bg-success
+                                               {% elif record.status == 'ABSENT' %}bg-danger
+                                               {% elif record.status == 'LEAVE' %}bg-info
+                                               {% else %}bg-warning{% endif %}">
+                                    {{ record.status }}
+                                </span>
+                            </div>
+                            {% if record.remarks %}
+                            <small class="text-muted d-block mt-1">{{ record.remarks }}</small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-center py-4">
+                            <p class="text-muted mb-0">No attendance records found</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportHistory() {
+    // Add export functionality
+    window.location.href = "{{ url_for('attendance.export_staff_history', staff_id=staff.id) }}";
+}
+
+function previousMonth() {
+    const currentMonth = {{ month }};
+    const currentYear = {{ year }};
+    let newMonth = currentMonth - 1;
+    let newYear = currentYear;
+    
+    if (newMonth < 1) {
+        newMonth = 12;
+        newYear -= 1;
+    }
+    
+    window.location.href = `{{ url_for('attendance.staff_history', staff_id=staff.id) }}?month=${newMonth}&year=${newYear}`;
+}
+
+function nextMonth() {
+    const currentMonth = {{ month }};
+    const currentYear = {{ year }};
+    let newMonth = currentMonth + 1;
+    let newYear = currentYear;
+    
+    if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
+    }
+    
+    window.location.href = `{{ url_for('attendance.staff_history', staff_id=staff.id) }}?month=${newMonth}&year=${newYear}`;
+}
+</script>
+{% endblock %}
