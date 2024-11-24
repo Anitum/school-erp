@@ -32,6 +32,7 @@ def list_classes():
             Class.section.ilike(search)
         ))
 
+    current_year = datetime.now().year
     classes = query.order_by(Class.name, Class.section).all()
     branches = Branch.query.all()
     
@@ -39,7 +40,7 @@ def list_classes():
     available_teachers = Staff.query.filter_by(
         staff_type='TEACHER',
         is_active=True
-    ).all()
+).all()
 
     return render_template('classes/list.html',
                          classes=classes,
@@ -48,7 +49,8 @@ def list_classes():
                          selected_branch=branch_id,
                          selected_year=academic_year,
                          selected_status=is_active,
-                         search=search)
+                         search=search,
+                         current_year = current_year)
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add_class():

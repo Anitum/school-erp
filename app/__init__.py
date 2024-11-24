@@ -43,6 +43,10 @@ def create_app():
     from app.routes.events import bp as events_bp
     app.register_blueprint(events_bp)
 
+    from app.routes.inventory import bp as inventory_bp
+    app.register_blueprint(inventory_bp)
+
+
     # Custom Jinja Filters
     @app.template_filter('month_name')
     def month_name_filter(month_number):
