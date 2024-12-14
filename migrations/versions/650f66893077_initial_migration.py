@@ -1,8 +1,8 @@
-"""empty message
+"""Initial migration
 
-Revision ID: 85cf795431f3
+Revision ID: 650f66893077
 Revises: 
-Create Date: 2024-11-21 22:43:25.500699
+Create Date: 2024-12-13 15:28:21.359034
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '85cf795431f3'
+revision = '650f66893077'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -164,6 +164,8 @@ def upgrade():
     sa.Column('email', sa.String(length=100), nullable=True),
     sa.Column('address_id', sa.Integer(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('password_hash', sa.String(length=255), nullable=True),
+    sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['address_id'], ['address.id'], ),
@@ -190,6 +192,8 @@ def upgrade():
     sa.Column('remarks', sa.String(length=255), nullable=True),
     sa.Column('marked_by', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('arrival_time', sa.Time(), nullable=True),
+    sa.Column('expected_arrival_time', sa.Time(), nullable=True),
     sa.ForeignKeyConstraint(['marked_by'], ['staff.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('entity_type', 'entity_id', 'date', name='unique_daily_attendance')
@@ -243,6 +247,22 @@ def upgrade():
     sa.ForeignKeyConstraint(['performed_by'], ['staff.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('school_event',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=100), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('date', sa.Date(), nullable=False),
+    sa.Column('event_type', sa.Enum('ACADEMIC', 'CULTURAL', 'SPORTS', 'EXAM', 'OTHER', name='event_types'), nullable=False),
+    sa.Column('venue', sa.String(length=100), nullable=True),
+    sa.Column('coordinator_id', sa.Integer(), nullable=True),
+    sa.Column('is_holiday', sa.Boolean(), nullable=True),
+    sa.Column('participants', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['coordinator_id'], ['staff.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('student',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('first_name', sa.String(length=50), nullable=False),
@@ -256,6 +276,8 @@ def upgrade():
     sa.Column('transport_route_id', sa.Integer(), nullable=True),
     sa.Column('joining_date', sa.Date(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('password_hash', sa.String(length=255), nullable=True),
+    sa.Column('last_login', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['branch_id'], ['branch.id'], ),
@@ -311,6 +333,7 @@ def downgrade():
     op.drop_table('academic_record')
     op.drop_table('subject')
     op.drop_table('student')
+    op.drop_table('school_event')
     op.drop_table('inventory_transaction')
     op.drop_table('class')
     with op.batch_alter_table('audit_log', schema=None) as batch_op:

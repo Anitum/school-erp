@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from app.models.models import db, Inventory, InventoryTransaction, Staff, Branch
 from datetime import datetime
 
+
 bp = Blueprint('inventory', __name__, url_prefix='/inventory')
 
 @bp.route('/')

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Login - School ERP{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Login</h2>
+                    
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- User Type Selection -->
+                        <div class="mb-4">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="user_type" id="admin" value="admin" checked>
+                                <label class="btn btn-outline-primary" for="admin">
+                                    <i class="fas fa-user-shield"></i> Admin
+                                </label>
+
+                                <input type="radio" class="btn-check" name="user_type" id="staff" value="staff">
+                                <label class="btn btn-outline-primary" for="staff">
+                                    <i class="fas fa-chalkboard-teacher"></i> Staff
+                                </label>
+
+                                <input type="radio" class="btn-check" name="user_type" id="student" value="student">
+                                <label class="btn btn-outline-primary" for="student">
+                                    <i class="fas fa-user-graduate"></i> Student
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Username/Email Field -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label" id="username_label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="form-text" id="username_help"></div>
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                                <label class="form-check-label" for="remember">
+                                    Remember me
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Forgot Password Link -->
+                    <div class="text-center mt-3">
+                        <a href="#" class="text-decoration-none">Forgot Password?</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeInputs = document.querySelectorAll('input[name="user_type"]');
+    const usernameLabel = document.getElementById('username_label');
+    const usernameHelp = document.getElementById('username_help');
+    const usernameInput = document.getElementById('username');
+
+    // Update username field based on user type
+    function updateUsernameField(userType) {
+        switch(userType) {
+            case 'admin':
+                usernameLabel.textContent = 'Username';
+                usernameHelp.textContent = 'Enter your admin username';
+                usernameInput.type = 'text';
+                break;
+            case 'staff':
+                usernameLabel.textContent = 'Email';
+                usernameHelp.textContent = 'Enter your staff email address';
+                usernameInput.type = 'email';
+                break;
+            case 'student':
+                usernameLabel.textContent = 'Aadhaar Number';
+                usernameHelp.textContent = 'Enter your 12-digit Aadhaar number';
+                usernameInput.type = 'text';
+                break;
+        }
+    }
+
+    // Add event listeners to radio buttons
+    userTypeInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            updateUsernameField(e.target.value);
+        });
+    });
+
+    // Initialize with default value
+    updateUsernameField('admin');
+
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+
+    togglePassword.addEventListener('click', function() {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #0d6efd;
+}
+
+.btn-outline-secondary:focus {
+    box-shadow: none;
+}
+
+.alert {
+    border-radius: 10px;
+}
+</style>
+{% endblock %}

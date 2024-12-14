@@ -6,6 +6,7 @@ from datetime import datetime
 import calendar
 
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 
@@ -46,6 +47,9 @@ def create_app():
     from app.routes.inventory import bp as inventory_bp
     app.register_blueprint(inventory_bp)
 
+
+    from app.routes.auth import bp as auth_bp
+    app.register_blueprint(auth_bp)
 
     # Custom Jinja Filters
     @app.template_filter('month_name')

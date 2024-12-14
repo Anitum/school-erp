@@ -110,6 +110,15 @@ class Student(db.Model, TimestampMixin):
     def __repr__(self):
         return f'<Student {self.full_name}>'
 
+    password_hash = db.Column(db.String(255))
+    last_login = db.Column(db.DateTime)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 class Parent(db.Model, TimestampMixin):
     """Parent model with relationships to students and documents"""
     __tablename__ = 'parent'
@@ -207,6 +216,16 @@ class Staff(db.Model, TimestampMixin):
 
     def __repr__(self):
         return f'<Staff {self.full_name}>'
+
+    password_hash = db.Column(db.String(255))
+    last_login = db.Column(db.DateTime)
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 
 class Address(db.Model):
     """Address model for staff and parents"""
