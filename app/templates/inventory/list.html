@@ -59,7 +59,7 @@
             <div class="card bg-warning bg-opacity-10">
                 <div class="card-body">
                     <h6 class="card-title text-warning">Low Stock Items</h6>
-                    <h2 class="mb-0">{{ items|selectattr('quantity', '<=', 'minimum_quantity')|list|length }}</h2>
+                    <h2 class="mb-0">{{ low_stock_count }}</h2>
                 </div>
             </div>
         </div>

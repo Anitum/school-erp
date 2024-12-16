@@ -95,8 +95,8 @@ def view_class(class_id):
     student_stats = {
         'total': len(class_obj.students),
         'active': sum(1 for s in class_obj.students if s.is_active),
-        'male': sum(1 for s in class_obj.students if hasattr(s, 'gender') and s.gender == 'MALE'),
-        'female': sum(1 for s in class_obj.students if hasattr(s, 'gender') and s.gender == 'FEMALE')
+        'male': sum(1 for s in class_obj.students if getattr(s, 'gender', None) == 'MALE'),
+        'female': sum(1 for s in class_obj.students if getattr(s, 'gender', None) == 'FEMALE')
     }
     
     # Get subject statistics
