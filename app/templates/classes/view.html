@@ -200,7 +200,7 @@
                                 <tr>
                                     <td>{{ loop.index }}</td>
                                     <td>{{ student.full_name }}</td>
-                                    <td>{{ student.gender if hasattr(student, 'gender') else 'N/A' }}</td>
+                                    <td>{{ student.gender if student.gender is defined else 'N/A' }}</td>
                                     <td>
                                         {% if student.parents %}
                                             {% for parent in student.parents[:1] %}
