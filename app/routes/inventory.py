@@ -30,8 +30,11 @@ def list_inventory():
             )
         )
 
+
     items = query.order_by(Inventory.name).all()
-    return render_template('inventory/list.html', items=items)
+    low_stock_count = sum(1 for item in items if item.quantity <= item.minimum_quantity)
+    
+    return render_template('inventory/list.html', items=items, low_stock_count=low_stock_count)
 
 @bp.route('/add', methods=['GET', 'POST'])
 def add_item():
