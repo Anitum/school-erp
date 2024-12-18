@@ -28,41 +28,35 @@ def list_fees():
             extract('month', FeeTransaction.due_date) == month,
             extract('year', FeeTransaction.due_date) == year
         )
+    
+    # Apply search filter
     if search:
         if entity_type == 'STUDENT':
             query = query.join(Student, 
                 FeeTransaction.entity_id == Student.id).filter(
-                    Student.first_name.ilike(f'%{search}%') | 
-                    Student.last_name.ilike(f'%{search}%')
+                    db.or_(
+                        Student.first_name.ilike(f'%{search}%'),
+                        Student.last_name.ilike(f'%{search}%')
+                    )
                 )
         else:
             query = query.join(Staff,
                 FeeTransaction.entity_id == Staff.id).filter(
-                    Staff.first_name.ilike(f'%{search}%') |
-                    Staff.last_name.ilike(f'%{search}%')
+                    db.or_(
+                        Staff.first_name.ilike(f'%{search}%'),
+                        Staff.last_name.ilike(f'%{search}%')
+                    )
                 )
 
+    # Execute query
     transactions = query.order_by(FeeTransaction.due_date.desc()).all()
-    fee_types = FeeType.query.all()
-    current_year = datetime.now().year
-        
-    # Get filter parameters (your existing code)
-    entity_type = request.args.get('entity_type', 'STUDENT')
-    status = request.args.get('status')
-    month = request.args.get('month', type=int, default=datetime.now().month)
-    year = request.args.get('year', type=int, default=current_year)
-    search = request.args.get('search', '')
 
-    # Calculate statistics
-    transactions = FeeTransaction.query.all()  # or your existing filtered query
+    # Calculate statistics based on filtered transactions
     stats = {
         'total_amount': sum(t.amount for t in transactions) if transactions else 0,
         'collected_amount': sum(t.amount for t in transactions if t.transaction_status == 'PAID'),
         'pending_amount': sum(t.amount for t in transactions if t.transaction_status == 'PENDING'),
-        'overdue_amount': sum(t.amount for t in transactions if t.transaction_status == 'OVERDUE'),
-        'total_transactions': len(transactions),
-        'paid_transactions': len([t for t in transactions if t.transaction_status == 'PAID']),
-        'pending_transactions': len([t for t in transactions if t.transaction_status == 'PENDING'])
+        'overdue_amount': sum(t.amount for t in transactions if t.transaction_status == 'OVERDUE')
     }
 
     return render_template('fees/list.html',
@@ -73,8 +67,7 @@ def list_fees():
                          selected_month=month,
                          selected_year=year,
                          search=search,
-                         current_year=current_year,
-                         # Add these statistics
+                         current_year=datetime.now().year,
                          total_amount=stats['total_amount'],
                          collected_amount=stats['collected_amount'],
                          pending_amount=stats['pending_amount'],

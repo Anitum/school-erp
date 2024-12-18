@@ -145,8 +145,8 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
+            <div class="card" >
+                <div class="card-body" style="height: 250px;">
                     <h6 class="text-success">Transport Usage</h6>
                     <canvas id="transportChart"></canvas>
                 </div>
@@ -154,7 +154,7 @@
         </div>
         <div class="col-md-3">
             <div class="card">
-                <div class="card-body">
+                <div class="card-body" style="height: 250px;">
                     <h6 class="text-info">Age Distribution</h6>
                     <canvas id="ageChart"></canvas>
                 </div>
@@ -285,7 +285,7 @@ function initializeCharts() {
             }]
         },
         options: {
-            responsive: true,
+            responsive: false,
             maintainAspectRatio: false
         }
     });
@@ -308,6 +308,8 @@ function initializeCharts() {
             maintainAspectRatio: false
         }
     });
+
+    
 
     // Initialize other charts similarly
 }
