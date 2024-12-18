@@ -123,7 +123,7 @@ def branch_students(branch_id):
         )
 
     students = query.order_by(Student.first_name).all()
-    return render_template('branch/students.html',
+    return render_template('branch/branch_students.html',
                          branch=branch,
                          students=students)
 
@@ -155,6 +155,6 @@ def branch_staff(branch_id):
         )
 
     staff = query.order_by(Staff.first_name).all()
-    return render_template('branch/staff.html',
+    return render_template('branch/branch_staff.html',
                          branch=branch,
                          staff=staff)
