@@ -136,33 +136,34 @@
 
     <!-- Stats Cards -->
     <div class="row">
-        <div class="col-md-3">
+        <!-- <div class="col-md-3">
+
             <div class="card">
-                <div class="card-body">
+                <div class="card-body" style="height: 250px;">
                     <h6 class="text-primary">Gender Distribution</h6>
                     <canvas id="genderChart"></canvas>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
+        </div> -->
+        <div class="col-md-4">
             <div class="card" >
-                <div class="card-body" style="height: 250px;">
+                <div class="card-body" style="height: 300px;">
                     <h6 class="text-success">Transport Usage</h6>
-                    <canvas id="transportChart"></canvas>
+                    <canvas id="transportChart" style="padding-bottom: 30px;"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card">
-                <div class="card-body" style="height: 250px;">
+                <div class="card-body" style="height: 300px;">
                     <h6 class="text-info">Age Distribution</h6>
-                    <canvas id="ageChart"></canvas>
+                    <canvas id="ageChart" style="padding-bottom: 30px;"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card">
-                <div class="card-body">
+                <div class="card-body" style="height: 300px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
                     <h6 class="text-warning">Status Overview</h6>
                     <canvas id="statusChart"></canvas>
                 </div>
@@ -273,7 +274,7 @@
 function initializeCharts() {
     // Gender distribution chart
     new Chart(document.getElementById('genderChart'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: ['Male', 'Female'],
             datasets: [{
@@ -281,18 +282,24 @@ function initializeCharts() {
                     {{ class_obj.students|selectattr('gender', 'equalto', 'MALE')|list|length }},
                     {{ class_obj.students|selectattr('gender', 'equalto', 'FEMALE')|list|length }}
                 ],
-                backgroundColor: ['#36A2EB', '#FF6384']
+                backgroundColor: ['#36A2EB', '#FF6384'],
+                borderWidth: 1
             }]
         },
         options: {
-            responsive: false,
-            maintainAspectRatio: false
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
         }
     });
 
     // Transport usage chart
     new Chart(document.getElementById('transportChart'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: ['Using Transport', 'No Transport'],
             datasets: [{
@@ -300,18 +307,82 @@ function initializeCharts() {
                     {{ class_obj.students|selectattr('transport_route')|list|length }},
                     {{ class_obj.students|rejectattr('transport_route')|list|length }}
                 ],
-                backgroundColor: ['#4BC0C0', '#FF9F40']
+                backgroundColor: ['#17A2B8', '#6C757D'],
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
         }
     });
 
-    
+    // Age distribution chart
+    new Chart(document.getElementById('ageChart'), {
+        type: 'bar',
+        data: {
+            labels: ['13', '14', '15', '16', '17'],
+            datasets: [{
+                label: 'Students',
+                data: [
+                    {{ class_obj.students|selectattr('age', 'equalto', 13)|list|length }},
+                    {{ class_obj.students|selectattr('age', 'equalto', 14)|list|length }},
+                    {{ class_obj.students|selectattr('age', 'equalto', 15)|list|length }},
+                    {{ class_obj.students|selectattr('age', 'equalto', 16)|list|length }},
+                    {{ class_obj.students|selectattr('age', 'equalto', 17)|list|length }}
+                ],
+                backgroundColor: '#36A2EB',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
 
-    // Initialize other charts similarly
+    // Status Overview chart
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Inactive'],
+            datasets: [{
+                data: [
+                    {{ class_obj.students|selectattr('is_active', 'equalto', true)|list|length }},
+                    {{ class_obj.students|selectattr('is_active', 'equalto', false)|list|length }}
+                ],
+                backgroundColor: ['#4CAF50', '#f44336'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
 }
 
 // Student search functionality
