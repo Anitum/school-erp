@@ -194,7 +194,7 @@
                         <textarea name="notes" class="form-control" rows="2"></textarea>
                     </div>
                     <input type="hidden" name="transaction_type" id="transactionType">
-                    <input type="hidden" name="staff_id" value="{{ current_user.id }}">
+                    <input type="hidden" name="staff_id" {# add user authenticated staff id here when auth is completed as value attribute #} 
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
