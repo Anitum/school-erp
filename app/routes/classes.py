@@ -86,6 +86,27 @@ def add_class():
                          teachers=available_teachers,
                          current_year=datetime.now().year)
 
+@bp.route('/<int:class_id>/bulk_assign_teachers', methods=['POST'])
+def bulk_assign_teachers(class_id):
+    """Bulk assign teachers to subjects"""
+    class_obj = Class.query.get_or_404(class_id)
+    
+    try:
+        # Process each subject's teacher assignment
+        for subject in class_obj.subjects:
+            teacher_id = request.form.get(f'teacher_{subject.id}')
+            if teacher_id:
+                subject.teacher_id = teacher_id
+        
+        db.session.commit()
+        flash('Teachers assigned successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error assigning teachers: {str(e)}', 'error')
+        
+    return redirect(url_for('class.class_subjects', class_id=class_id))
+
 @bp.route('/<int:class_id>')
 def view_class(class_id):
     """View class details"""
