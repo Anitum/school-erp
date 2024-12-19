@@ -28,41 +28,35 @@ def list_fees():
             extract('month', FeeTransaction.due_date) == month,
             extract('year', FeeTransaction.due_date) == year
         )
+    
+    # Apply search filter
     if search:
         if entity_type == 'STUDENT':
             query = query.join(Student, 
                 FeeTransaction.entity_id == Student.id).filter(
-                    Student.first_name.ilike(f'%{search}%') | 
-                    Student.last_name.ilike(f'%{search}%')
+                    db.or_(
+                        Student.first_name.ilike(f'%{search}%'),
+                        Student.last_name.ilike(f'%{search}%')
+                    )
                 )
         else:
             query = query.join(Staff,
                 FeeTransaction.entity_id == Staff.id).filter(
-                    Staff.first_name.ilike(f'%{search}%') |
-                    Staff.last_name.ilike(f'%{search}%')
+                    db.or_(
+                        Staff.first_name.ilike(f'%{search}%'),
+                        Staff.last_name.ilike(f'%{search}%')
+                    )
                 )
 
+    # Execute query
     transactions = query.order_by(FeeTransaction.due_date.desc()).all()
-    fee_types = FeeType.query.all()
-    current_year = datetime.now().year
-        
-    # Get filter parameters (your existing code)
-    entity_type = request.args.get('entity_type', 'STUDENT')
-    status = request.args.get('status')
-    month = request.args.get('month', type=int, default=datetime.now().month)
-    year = request.args.get('year', type=int, default=current_year)
-    search = request.args.get('search', '')
 
-    # Calculate statistics
-    transactions = FeeTransaction.query.all()  # or your existing filtered query
+    # Calculate statistics based on filtered transactions
     stats = {
         'total_amount': sum(t.amount for t in transactions) if transactions else 0,
         'collected_amount': sum(t.amount for t in transactions if t.transaction_status == 'PAID'),
         'pending_amount': sum(t.amount for t in transactions if t.transaction_status == 'PENDING'),
-        'overdue_amount': sum(t.amount for t in transactions if t.transaction_status == 'OVERDUE'),
-        'total_transactions': len(transactions),
-        'paid_transactions': len([t for t in transactions if t.transaction_status == 'PAID']),
-        'pending_transactions': len([t for t in transactions if t.transaction_status == 'PENDING'])
+        'overdue_amount': sum(t.amount for t in transactions if t.transaction_status == 'OVERDUE')
     }
 
     return render_template('fees/list.html',
@@ -73,8 +67,7 @@ def list_fees():
                          selected_month=month,
                          selected_year=year,
                          search=search,
-                         current_year=current_year,
-                         # Add these statistics
+                         current_year=datetime.now().year,
                          total_amount=stats['total_amount'],
                          collected_amount=stats['collected_amount'],
                          pending_amount=stats['pending_amount'],
@@ -160,18 +153,75 @@ def generate_fees():
     
     return redirect(url_for('fees.list_fees'))
 
+@bp.route('/student/<int:student_id>/add', methods=['POST'])
+def add_student_fee(student_id):
+    """Add a fee for a specific student"""
+    try:
+        student = Student.query.get_or_404(student_id)
+        fee_type = FeeType.query.get_or_404(request.form['fee_type_id'])
+        
+        transaction = FeeTransaction(
+            entity_type='STUDENT',
+            entity_id=student_id,
+            fee_type_id=fee_type.id,
+            amount=fee_type.amount,
+            due_date=datetime.strptime(request.form['due_date'], '%Y-%m-%d'),
+            transaction_status='PENDING',
+            remarks=request.form.get('remarks')
+        )
+        
+        db.session.add(transaction)
+        db.session.commit()
+        flash('Fee added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding fee: {str(e)}', 'error')
+    
+    return redirect(url_for('fees.student_fees', student_id=student_id))
+
 @bp.route('/student/<int:student_id>')
 def student_fees(student_id):
     """View fee history for a student"""
+
     student = Student.query.get_or_404(student_id)
+    
     transactions = FeeTransaction.query.filter_by(
         entity_type='STUDENT',
         entity_id=student_id
     ).order_by(FeeTransaction.due_date.desc()).all()
+
+     # Separate current year and previous years transactions
+    current_year = student.class_group.academic_year
+    current_year_transactions = [t for t in transactions if t.due_date.year == current_year]
+    previous_years = {}
+    for t in transactions:
+        if t.due_date.year != current_year:
+            previous_years.setdefault(t.due_date.year, []).append(t)
+    
+    # Calculate fee statistics
+    total_fees = sum(t.amount for t in current_year_transactions)
+    paid_amount = sum(t.amount for t in current_year_transactions if t.transaction_status == 'PAID')
+    pending_amount = sum(t.amount for t in current_year_transactions if t.transaction_status == 'PENDING')
+    overdue_amount = sum(t.amount for t in current_year_transactions if t.transaction_status == 'OVERDUE')
+    
+    # Calculate counts and percentages
+    pending_count = len([t for t in current_year_transactions if t.transaction_status == 'PENDING'])
+    overdue_count = len([t for t in current_year_transactions if t.transaction_status == 'OVERDUE'])
+    paid_percentage = round((paid_amount / total_fees * 100) if total_fees > 0 else 0)
     
     return render_template('fees/student.html',
                          student=student,
-                         transactions=transactions)
+                         current_year_transactions=current_year_transactions,
+                         previous_years=previous_years,
+                         total_fees=total_fees,
+                         paid_amount=paid_amount,
+                         pending_amount=pending_amount,
+                         overdue_amount=overdue_amount,
+                         pending_count=pending_count,
+                         overdue_count=overdue_count,
+                         paid_percentage=paid_percentage,
+                         fee_types=FeeType.query.all(),
+                         today=date.today())
 
 @bp.route('/report')
 def fee_report():
